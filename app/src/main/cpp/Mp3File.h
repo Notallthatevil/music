@@ -13,9 +13,8 @@
 
 class Mp3File: File {
 private:
+
     ID3Tag *id3Tag;
-
-
 public:
     Mp3File(const char *filepath);
     ~Mp3File();

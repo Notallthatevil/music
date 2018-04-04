@@ -8,8 +8,10 @@
 #include <exception>
 #include <string>
 #include <vector>
-#include "Byte.h"
 #include <regex>
+#include "File.h"
+typedef unsigned char Byte;
+
 
 using namespace std;
 
@@ -37,30 +39,28 @@ private:
     const string ARTISTTAG = "TPE1";
     const string TRACKTAG = "TRCK";
     const string YEARTAG = "TYER";
-//    vector<char> buffer;
     HeaderFlags flags;
     SongData songData;
-public:
-    const SongData &getSongData() const;
+
 
 private:
 
-    string getUTF16String(char *buffer, int frameSize);
+    string getUTF16String(vector<char> *buffer, int offset, size_t frameSize);
 
-    string getTextFrame(char *buffer,int frameSize);
+    string getTextFrame(vector<char> *buffer, int offset, size_t frameSize);
 
 public:
-    ID3Tag(vector<char> buffer);
+    ID3Tag(vector<char> *buffer);
 
     ~ID3Tag();
 
-    static int getTagSize(char *tagHeader);
-
-//    vector<char> getBuffer();
-
-    HeaderFlags findFlags(vector<char> tags);
-
     void getBits(Byte byte, Byte *bits);
+
+    HeaderFlags findFlags(vector<char> *tags);
+
+    const SongData &getSongData() const;
+
+    static int getTagSize(char *tagHeader);
 
 };
 
@@ -71,7 +71,6 @@ struct ID3TagException : public exception {
     }
 };
 
-typedef unsigned char Byte;
 
 
 #endif //TAGGER_ID3TAG_H
