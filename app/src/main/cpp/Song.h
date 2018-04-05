@@ -27,7 +27,7 @@ public:
 
     ~Song();
 
-    const string &getFilepath() const;
+     string &getFilepath() ;
 
     void setFilepath(const string &filepath);
 

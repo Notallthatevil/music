@@ -55,7 +55,11 @@ string ID3Tag::getTextFrame(vector<char> *buffer, int offset, size_t frameSize) 
             //utf-8
         default:
             for (int i = 1; i < frameSize; i++) {
-                frameData += (*buffer)[i + offset];
+                if ((*buffer)[i + offset] == '\''){
+                    frameData += "''";
+                }else{
+                    frameData += (*buffer)[i + offset];
+                }
             }
             break;
     }
@@ -75,7 +79,12 @@ string ID3Tag::getUTF16String(vector<char> *buffer, int offset, size_t frameSize
         if ((*buffer)[i + offset + big] == 0x00 && (*buffer)[i + offset + little] == 0x00) {
             break;
         }
-        frameData += (*buffer)[i + offset + big];
+        if((*buffer)[i + offset + big] == '\''){
+            frameData+= "''";
+        }else{
+            frameData += (*buffer)[i + offset + big];
+        }
+
     }
     return frameData;
 }

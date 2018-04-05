@@ -64,6 +64,15 @@ static int callback(void *NotUsed, int argc, char **argv, char **azColName) {
     return 0;
 }
 
+void makeSqlFriendly(string *str, const char *symbol) {
+    for (size_t i = 0; i < str->length(); i++) {
+        if ((*str)[i] == symbol[0]) {
+            str->insert(i, symbol);
+            i++;
+        }
+    }
+}
+
 /**
  * Returns an int based on the success of creating a database
  *
@@ -75,7 +84,6 @@ JNIEXPORT jint
 JNICALL
 Java_com_trippntechnology_tagger_MainActivity_generateDatabase(JNIEnv *env, jobject /* this */) {
     vector<string> files;
-    vector<Song> songs;
     try {
         files = getFiles("/storage/emulated/0/Music/");
     } catch (fileAccessException) {
@@ -91,43 +99,58 @@ Java_com_trippntechnology_tagger_MainActivity_generateDatabase(JNIEnv *env, jobj
         string sub = files[i].substr(files[i].find_last_of(".") + 1);
         if (sub == "mp3") {
             Mp3File mp3File(files[i].c_str());
-//            Song *newSong = new Song(files[i], mp3File->getId3Tag());
-//            allSongs[i] = *newSong;
+            Song *newSong = new Song(files[i], mp3File.getId3Tag());
+            allSongs[i] = *newSong;
         }
     }
 
-//    sqlite3 *db;
-//    char *errormsg = 0;
-//    int rc = sqlite3_open_v2("/data/data/com.trippntechnology.tagger/databases/TNT.db", &db,
-//                             SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE, NULL);
-//    if (rc) {
-//        __android_log_print(ANDROID_LOG_ERROR, "DATABASE", "%s", sqlite3_errmsg(db));
-//    } else {
-//        __android_log_print(ANDROID_LOG_DEBUG, "DATABASE", "DB OPENED");
-//    }
-//    const char *sql = "CREATE TABLE SONGS(ID INT PRIMARY KEY NOT NULL,TITLE TEXT,ARTIST TEXT,ALBUM TEXT,TRACK TEXT,YEAR TEXT,FILEPATH TEXT NOT NULL);";
-//    rc = sqlite3_exec(db, sql, callback, 0, &errormsg);
-//    if (rc) {
-//        __android_log_print(ANDROID_LOG_ERROR, "DATABASE", "%s", errormsg);
-//        sqlite3_free(errormsg);
-//    } else {
-//        __android_log_print(ANDROID_LOG_DEBUG, "DATABASE", "TABLE CREATED SUCCESSFUL");
-//    }
-//
-//    for(Song s:allSongs){
-//        string insertSql = "INSERT INTO SONG (TITLE,ARTIST,ALBUM,TRACK,YEAR,FILEPATH) VALUES("+s.getTitle()+", "+s.getArtist()+", "+s.getAlbum()+", "+s.getTrack()+", "+s.getYear()+", "+s.getFilepath()+");";
-//        sqlite3_exec(db,insertSql.c_str(),callback,0,&errormsg);
-//        if (rc) {
-//            __android_log_print(ANDROID_LOG_ERROR, "DATABASE", "%s", errormsg);
-//            sqlite3_free(errormsg);
-//        } else {
-//            __android_log_print(ANDROID_LOG_DEBUG, "DATABASE", "INSERT SUCCESSFUL");
-//        }
-//    }
-//
-//    sqlite3_close(db);
+    sqlite3 *db;
+    char *errormsg = 0;
+    int rc = sqlite3_open_v2("/data/data/com.trippntechnology.tagger/databases/TNT.db", &db,
+                             SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE, NULL);
+    if (rc) {
+        __android_log_print(ANDROID_LOG_ERROR, "DATABASE", "%s", sqlite3_errmsg(db));
+    } else {
+        __android_log_print(ANDROID_LOG_DEBUG, "DATABASE", "DB OPENED");
+    }
 
+    string del = "DROP TABLE IF EXISTS SONGS";
+    rc = sqlite3_exec(db, del.c_str(), callback, 0, &errormsg);
+    if (rc) {
+        __android_log_print(ANDROID_LOG_ERROR, "DATABASE", "%s", errormsg);
+        sqlite3_free(errormsg);
+    } else {
+        __android_log_print(ANDROID_LOG_DEBUG, "DATABASE", "TABLE DELETED SUCCESSFUL");
+    }
 
-    //TODO add delete for allSongs
+    string sql = "CREATE TABLE SONGS(TITLE TEXT,ARTIST TEXT,ALBUM TEXT,TRACK TEXT,YEAR TEXT,FILEPATH TEXT NOT NULL);";
+    rc = sqlite3_exec(db, sql.c_str(), callback, 0, &errormsg);
+    if (rc) {
+        __android_log_print(ANDROID_LOG_ERROR, "DATABASE", "%s", errormsg);
+        sqlite3_free(errormsg);
+    } else {
+        __android_log_print(ANDROID_LOG_DEBUG, "DATABASE", "TABLE CREATED SUCCESSFUL");
+    }
+
+    for (Song s:allSongs) {
+        if (s.getFilepath().find("'")!=s.getFilepath().npos){
+            makeSqlFriendly(&s.getFilepath(), "'");
+        }
+        string insertSql = "INSERT INTO SONGS (TITLE,ARTIST,ALBUM,TRACK,YEAR,FILEPATH) VALUES('" +
+                           s.getTitle() + "', '" + s.getArtist() + "', '" + s.getAlbum() + "', '" +
+                           s.getTrack() + "', '" + s.getYear() + "', '" + s.getFilepath() + "');";
+        rc = sqlite3_exec(db, insertSql.c_str(), callback, 0, &errormsg);
+        if (rc) {
+            __android_log_print(ANDROID_LOG_ERROR, "DATABASE", "%s\n%s", errormsg,
+                                s.getFilepath().c_str());
+            sqlite3_free(errormsg);
+        } else {
+            __android_log_print(ANDROID_LOG_DEBUG, "DATABASE", "INSERT SUCCESSFUL");
+        }
+
+    }
+    allSongs.clear();
+    sqlite3_close(db);
+
     return 1;
 }

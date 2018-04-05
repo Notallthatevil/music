@@ -62,7 +62,7 @@ const string &Song::getTrack() const {
     return track;
 }
 
-const string &Song::getFilepath() const {
+ string &Song::getFilepath()  {
     return filepath;
 }
 
