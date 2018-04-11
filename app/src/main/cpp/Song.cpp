@@ -25,6 +25,7 @@ void Song::setTitle(const string &Title) {
     Song::Title = Title;
 }
 
+
 void Song::setAlbum(const string &Album) {
     Song::Album = Album;
 }

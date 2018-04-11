@@ -50,6 +50,7 @@ public:
     const string &getYear() const;
 
     const string &getTrack() const;
+
 };
 
 #endif //TAGGER_SONG_H

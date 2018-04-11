@@ -75,14 +75,20 @@ string ID3Tag::getUTF16String(vector<char> *buffer, int offset, size_t frameSize
         big = 0;
     }
     for (int i = 3; i < frameSize; i += 2) {
-        //TODO Fix output if two byte character
+        //TODO Fix to work with utf-16 characters
         if ((*buffer)[i + offset + big] == 0x00 && (*buffer)[i + offset + little] == 0x00) {
             break;
         }
         if((*buffer)[i + offset + big] == '\''){
             frameData+= "''";
         }else{
-            frameData += (*buffer)[i + offset + big];
+            if((*buffer)[i+offset+big] == 0xe9){
+                frameData += 'e';
+            }else if((*buffer)[i+offset+big] == 0xf1){
+                frameData += 'n';
+            }else{
+                frameData += (*buffer)[i + offset + big];
+            }
         }
 
     }
@@ -133,11 +139,11 @@ HeaderFlags ID3Tag::findFlags(vector<char> *tags) {
 
 }
 
-void ID3Tag::getBits(Byte byte, Byte bits[]) {
-    for (Byte i = 0; i < 8; i++) {
-        bits[7 - i] = (byte & (1 << i) != 0);
-    }
-}
+//void ID3Tag::getBits(Byte byte, Byte bits[]) {
+//    for (Byte i = 0; i < 8; i++) {
+//        bits[7 - i] = ((byte & (1 << i)) != 0);
+//    }
+//}
 
 const SongData &ID3Tag::getSongData() const {
     return songData;

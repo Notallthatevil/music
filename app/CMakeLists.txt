@@ -22,9 +22,9 @@ add_library( # Sets the name of the library.
              src/main/cpp/File.cpp
              src/main/cpp/Mp3File.cpp
              src/main/cpp/ID3Tag.cpp
-             src/main/cpp/sqlite3.c)
+             src/main/cpp/sqlite3.c
+             src/main/cpp/SqlHelper.cpp)
 
-include_directories(src/main/cpp/headers/)
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because CMake includes system libraries in the search path by
 # default, you only need to specify the name of the public NDK library

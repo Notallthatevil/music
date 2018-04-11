@@ -32,6 +32,8 @@ class MainActivity : AppCompatActivity() {
             val end = System.currentTimeMillis()
             sample_text.text = ((end-start).toString())
         }
+        retrieveSongs()
+        var i = 0
     }
 
 
@@ -60,6 +62,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     external fun generateDatabase(): Int
+    external fun retrieveSongs(): Array<Song>
 
     companion object {
 

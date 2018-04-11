@@ -54,7 +54,7 @@ public:
 
     ~ID3Tag();
 
-    void getBits(Byte byte, Byte *bits);
+//    void getBits(Byte byte, Byte *bits);
 
     HeaderFlags findFlags(vector<char> *tags);
 
