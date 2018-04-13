@@ -21,7 +21,9 @@ SqlHelper::~SqlHelper() {
 
 int SqlHelper::createTable(string tableName) {
     if (tableName == SONG_TABLE) {
-        string sql = "CREATE TABLE " + SONG_TABLE + "(" + SONG_TITLE_COLOUMN + " TEXT, " +
+        string sql = "CREATE TABLE " + SONG_TABLE + "(" +
+                     SONG_ID_COLUMN + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                     SONG_TITLE_COLUMN + " TEXT, " +
                      SONG_ARTIST_COLUMN + " TEXT, " +
                      SONG_ALBUM_COLUMN + " TEXT, " +
                      SONG_TRACK_COLUMN + " TEXT, " +
@@ -70,38 +72,26 @@ void SqlHelper::makeSqlFriendly(string *str, const char *symbol) {
 jobjectArray SqlHelper::retrieveAllSongs(JNIEnv *env) {
     string sql = "SELECT * FROM " + SONG_TABLE;
     sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, NULL);
-//    int i = 0;
     jclass jSongClass = env->FindClass("com/trippntechnology/tagger/Song");
     jmethodID jSongConstructor = env->GetMethodID(jSongClass, "<init>",
-                                                  "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+                                                  "(ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
     vector<jobject> songList;
     while (sqlite3_step(stmt) == SQLITE_ROW) {
-//        env->PushLocalFrame(1);
+        jint jID = sqlite3_column_int(stmt, SONG_ID_NUMBER);
         jstring jTitle = env->NewStringUTF((char *) sqlite3_column_text(stmt, SONG_TITLE_NUMBER));
         jstring jArtist = env->NewStringUTF((char *) sqlite3_column_text(stmt, SONG_ARTIST_NUMBER));
         jstring jAlbum = env->NewStringUTF((char *) sqlite3_column_text(stmt, SONG_ALBUM_NUMBER));
         jstring jTrack = env->NewStringUTF((char *) sqlite3_column_text(stmt, SONG_TRACK_NUMBER));
         jstring jYear = env->NewStringUTF((char *) sqlite3_column_text(stmt, SONG_YEAR_NUMBER));
-        jstring jFilepath = env->NewStringUTF((char *) sqlite3_column_text(stmt, SONG_FILEPATH_NUMBER));
-        jobject jSong = env->NewObject(jSongClass,jSongConstructor,jTitle,jArtist,jAlbum,jTrack,jYear,jFilepath);
-//        env->PopLocalFrame(jSong);
+        jstring jFilepath = env->NewStringUTF(
+                (char *) sqlite3_column_text(stmt, SONG_FILEPATH_NUMBER));
+        jobject jSong = env->NewObject(jSongClass, jSongConstructor,jID, jTitle, jArtist, jAlbum,
+                                       jTrack, jYear, jFilepath);
         songList.push_back(jSong);
-
-//        Song *song = new Song();
-//        song->setTitle((char *) sqlite3_column_text(stmt, SONG_TITLE_NUMBER));
-//        song->setArtist((char *) sqlite3_column_text(stmt, SONG_ARTIST_NUMBER));
-//        song->setAlbum((char *) sqlite3_column_text(stmt, SONG_ALBUM_NUMBER));
-//        song->setTrack((char *) sqlite3_column_text(stmt, SONG_TRACK_NUMBER));
-//        song->setYear((char *) sqlite3_column_text(stmt, SONG_YEAR_NUMBER));
-//        song->setFilepath((char *) sqlite3_column_text(stmt, SONG_FILEPATH_NUMBER));
-//        __android_log_print(ANDROID_LOG_DEBUG, "DATABASE", "insterted %i %s", i,
-//                            song->getFilepath().c_str());
-//        songsList.push_back(*song);
-//        i++;
     }
-    jobjectArray jSongList = env->NewObjectArray(songList.size(),jSongClass,NULL);
-    for (int i = 0;i<songList.size();i++){
-        env->SetObjectArrayElement(jSongList,i,songList[i]);
+    jobjectArray jSongList = env->NewObjectArray((jint) songList.size(), jSongClass, NULL);
+    for (int i = 0; i < songList.size(); i++) {
+        env->SetObjectArrayElement(jSongList, i, songList[i]);
     }
     return jSongList;
 }

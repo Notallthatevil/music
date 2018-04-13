@@ -139,11 +139,11 @@ HeaderFlags ID3Tag::findFlags(vector<char> *tags) {
 
 }
 
-//void ID3Tag::getBits(Byte byte, Byte bits[]) {
-//    for (Byte i = 0; i < 8; i++) {
-//        bits[7 - i] = ((byte & (1 << i)) != 0);
-//    }
-//}
+void ID3Tag::getBits(Byte byte, Byte bits[]) {
+    for (Byte i = 0; i < 8; i++) {
+        bits[7 - i] = ((byte & (1 << i)) != 0);
+    }
+}
 
 const SongData &ID3Tag::getSongData() const {
     return songData;

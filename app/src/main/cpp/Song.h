@@ -12,6 +12,7 @@ using namespace std;
 
 class Song {
 private:
+    int id;
     string Title;
     string Album;
     string Artist;

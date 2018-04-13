@@ -16,7 +16,6 @@ Mp3File::Mp3File(const char *filepath) : File(filepath) {
     fileStream->seekg(0);
     fileStream->read(tag.data(),size);
     id3Tag = new ID3Tag(&tag);
-    __android_log_print(ANDROID_LOG_ERROR,"MP3FILE","Tags successfully retrieved %s",filepath);
 }
 
 Mp3File::~Mp3File() {

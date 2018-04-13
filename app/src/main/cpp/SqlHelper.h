@@ -18,22 +18,24 @@ class SqlHelper {
 private:
     const string DATABASE_NAME = "/data/data/com.trippntechnology.tagger/databases/TNT.db";
 
-    const string SONG_TITLE_COLOUMN = "TITLE";
+    const string SONG_ID_COLUMN = "ID";
+    const string SONG_TITLE_COLUMN = "TITLE";
     const string SONG_ARTIST_COLUMN = "ARTIST";
     const string SONG_ALBUM_COLUMN = "ALBUM";
     const string SONG_TRACK_COLUMN = "TRACK";
     const string SONG_YEAR_COLUMN = "YEAR";
     const string SONG_FILEPATH_COLUMN = "FILEPATH";
-    const int SONG_TITLE_NUMBER = 0;
-    const int SONG_ARTIST_NUMBER = 1;
-    const int SONG_ALBUM_NUMBER = 2;
-    const int SONG_TRACK_NUMBER = 3;
-    const int SONG_YEAR_NUMBER = 4;
-    const int SONG_FILEPATH_NUMBER = 5;
+
+    const int SONG_ID_NUMBER = 0;
+    const int SONG_TITLE_NUMBER = 1;
+    const int SONG_ARTIST_NUMBER = 2;
+    const int SONG_ALBUM_NUMBER = 3;
+    const int SONG_TRACK_NUMBER = 4;
+    const int SONG_YEAR_NUMBER = 5;
+    const int SONG_FILEPATH_NUMBER = 6;
     sqlite3 *db;
     sqlite3_stmt *stmt;
     vector<Song> songsList;
-//    jobjectArray jSongList;
 
 public:
     const string SONG_TABLE = "SONGS";
