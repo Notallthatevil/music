@@ -10,13 +10,15 @@
 #include "Song.h"
 #include <android/log.h>
 #include <jni.h>
+#include <sys/stat.h>
 
 using namespace std;
 
 
 class SqlHelper {
 private:
-    const string DATABASE_NAME = "/data/data/com.trippntechnology.tagger/databases/TNT.db";
+    const string DATABASE_DIRECTORY = "/data/data/com.trippntechnology.tagger/databases";
+    const string DATABASE_NAME = DATABASE_DIRECTORY+"/TNT.db";
 
     const string SONG_ID_COLUMN = "ID";
     const string SONG_TITLE_COLUMN = "TITLE";

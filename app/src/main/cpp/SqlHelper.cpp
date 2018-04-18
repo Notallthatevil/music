@@ -5,7 +5,15 @@
 #include "SqlHelper.h"
 #include "Song.h"
 
+inline bool file_exists(const std::string &name) {
+    struct stat buffer;
+    return (stat(name.c_str(), &buffer) == 0);
+}
+
 SqlHelper::SqlHelper() {
+    if (!file_exists(DATABASE_DIRECTORY)) {
+        mkdir(DATABASE_DIRECTORY.c_str(), S_IRWXU | S_IRWXG | S_IXOTH);
+    }
     int rc = sqlite3_open_v2(DATABASE_NAME.c_str(), &db, SQLITE_OPEN_CREATE | SQLITE_OPEN_READWRITE,
                              NULL);
     if (rc) {
@@ -85,7 +93,7 @@ jobjectArray SqlHelper::retrieveAllSongs(JNIEnv *env) {
         jstring jYear = env->NewStringUTF((char *) sqlite3_column_text(stmt, SONG_YEAR_NUMBER));
         jstring jFilepath = env->NewStringUTF(
                 (char *) sqlite3_column_text(stmt, SONG_FILEPATH_NUMBER));
-        jobject jSong = env->NewObject(jSongClass, jSongConstructor,jID, jTitle, jArtist, jAlbum,
+        jobject jSong = env->NewObject(jSongClass, jSongConstructor, jID, jTitle, jArtist, jAlbum,
                                        jTrack, jYear, jFilepath);
         songList.push_back(jSong);
     }

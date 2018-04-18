@@ -59,6 +59,7 @@ vector<string> getFiles(string directory) {
  * Returns an int based on the success of creating a database
  *
  * -1 = unable to access files i.e. user has not granted permission
+ * -2 = unable to create database file
  *
  */
 extern "C"
@@ -84,14 +85,18 @@ Java_com_trippntechnology_tagger_MainActivity_generateDatabase(JNIEnv *env, jobj
             allSongs[i] = *newSong;
         }
     }
+
     SqlHelper sqlHelper;
     sqlHelper.dropTable(sqlHelper.SONG_TABLE);
     sqlHelper.createTable(sqlHelper.SONG_TABLE);
+    int insertErrors = 0;
     for (Song s:allSongs) {
-        sqlHelper.insertSong(s);
+        if (sqlHelper.insertSong(s) != 101) {
+            insertErrors++;
+        }
     }
     allSongs.clear();
-    return 0;
+    return insertErrors;
 }
 
 
@@ -99,6 +104,5 @@ extern "C"
 JNIEXPORT jobjectArray
 JNICALL Java_com_trippntechnology_tagger_MainActivity_retrieveSongs(JNIEnv *env, jobject) {
     SqlHelper sqlHelper;
-    jobjectArray array1 = sqlHelper.retrieveAllSongs(env);
-    return array1;
+    return sqlHelper.retrieveAllSongs(env);
 }

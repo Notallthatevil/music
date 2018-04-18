@@ -31,9 +31,9 @@ class MainActivity : AppCompatActivity() {
             generateDatabase()
             val end = System.currentTimeMillis()
             sample_text.text = ((end-start).toString())
+            retrieveSongs()
+
         }
-        retrieveSongs()
-        var i = 0
     }
 
 
