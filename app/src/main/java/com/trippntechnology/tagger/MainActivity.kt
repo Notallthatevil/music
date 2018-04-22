@@ -1,16 +1,17 @@
 package com.trippntechnology.tagger
 
 import android.Manifest
-import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
-import android.os.Debug
-import android.os.SystemClock
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
+import android.support.v7.widget.DefaultItemAnimator
+import android.support.v7.widget.LinearLayoutManager
 import android.util.Log
-import android.view.WindowManager
+import android.view.View
+import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
@@ -20,30 +21,35 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        if (BuildConfig.DEBUG){
-            if(Debug.isDebuggerConnected()){
-                Log.d("SCREEN", "Debugger is attached.")
-                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-            }
-        }
         if (getPermission()) {
             val start = System.currentTimeMillis()
             generateDatabase()
             val end = System.currentTimeMillis()
-            sample_text.text = ((end-start).toString())
-            retrieveSongs()
-
+            Log.d("EXECUTION TIME", (end - start).toString())
+            val songs = retrieveSongs().toMutableList()
+            val adapter = SongRecyclerAdapter(songs)
+            recyclerView.layoutManager = LinearLayoutManager(applicationContext)
+            recyclerView.itemAnimator = DefaultItemAnimator()
+            adapter.onItemClickListener = object : RecyclerViewOnItemClickListener{
+                override fun onItemclick(view: View, position: Int) {
+                    val intent = Intent(this@MainActivity,TagEditorActivity::class.java)
+                    intent.putExtra("SONG",adapter.songs[position])
+                    startActivity(intent)
+                }
+            }
+            recyclerView.adapter = adapter
         }
+
     }
 
 
-    private fun getPermission():Boolean {
+    private fun getPermission(): Boolean {
         return if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED) {
 
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), PERMSSIONREADEXTERNALSTORAGE)
             false
-        }else{
+        } else {
             true
         }
     }

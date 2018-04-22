@@ -16,7 +16,6 @@ typedef vector<vector<string>> VectorList;
 
 vector<string> getFiles(string directory) {
     DIR *d;
-    // vector<vector<string> > vectorList;
     VectorList vectorList;
     vector<string> stringList;
     d = opendir(directory.c_str());
@@ -36,7 +35,6 @@ vector<string> getFiles(string directory) {
                     }
                 }
             }
-//            delete dir;
         }
     } else {
         throw fileAccessException();
@@ -59,8 +57,8 @@ vector<string> getFiles(string directory) {
  * Returns an int based on the success of creating a database
  *
  * -1 = unable to access files i.e. user has not granted permission
- * -2 = unable to create database file
- *
+ * -2 = unable to creating database file
+ * else returns the number of songs that failed to be inserted into the database
  */
 extern "C"
 JNIEXPORT jint
@@ -85,16 +83,20 @@ Java_com_trippntechnology_tagger_MainActivity_generateDatabase(JNIEnv *env, jobj
             allSongs[i] = *newSong;
         }
     }
-
-    SqlHelper sqlHelper;
-    sqlHelper.dropTable(sqlHelper.SONG_TABLE);
-    sqlHelper.createTable(sqlHelper.SONG_TABLE);
     int insertErrors = 0;
-    for (Song s:allSongs) {
-        if (sqlHelper.insertSong(s) != 101) {
-            insertErrors++;
+    try {
+        SqlHelper sqlHelper;
+        sqlHelper.dropTable(sqlHelper.SONG_TABLE);
+        sqlHelper.createTable(sqlHelper.SONG_TABLE);
+        for (Song s:allSongs) {
+            if (sqlHelper.insertSong(s) != 101) {
+                insertErrors++;
+            }
         }
+    }catch (databaseCreationError()){
+        return -2;
     }
+
     allSongs.clear();
     return insertErrors;
 }
