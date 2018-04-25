@@ -6,20 +6,22 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import com.trippntechnology.tagger.databinding.ListItemSongBinding
 
-class SongRecyclerAdapter(val songs: MutableList<Song>) : RecyclerView.Adapter<SongRecyclerAdapter.SongViewHolder>() {
+class SongViewModelAdapter(val viewModel: TestViewModel): RecyclerView.Adapter<SongViewModelAdapter.SongViewHolder>() {
 
     var onItemClickListener: RecyclerViewOnItemClickListener? = null
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SongViewHolder {
-        return SongViewHolder(parent,onItemClickListener)
+        return SongViewHolder(parent,onItemClickListener).apply {
+            binding.viewModel = viewModel
+        }
     }
 
     override fun getItemCount(): Int {
-        return songs.size
+        return viewModel.songList.value!!.size
     }
 
     override fun onBindViewHolder(holder: SongViewHolder, position: Int) {
-        holder.binding.song = songs[position]
+        holder.binding.song = viewModel.songList.value!![position]
     }
 
 

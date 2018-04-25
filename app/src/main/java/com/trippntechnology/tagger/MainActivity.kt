@@ -3,6 +3,7 @@ package com.trippntechnology.tagger
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.databinding.DataBindingUtil
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
@@ -11,33 +12,42 @@ import android.support.v7.widget.DefaultItemAnimator
 import android.support.v7.widget.LinearLayoutManager
 import android.util.Log
 import android.view.View
-import android.widget.Toast
-import kotlinx.android.synthetic.main.activity_main.*
+import com.trippntechnology.tagger.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
 
     private val PERMSSIONREADEXTERNALSTORAGE: Int = 6745
+    private val nativeWrapper = NativeWrapper()
+
+//    private val viewModel by lazy { ViewModelProviders.of(this).get(TestViewModel::class.java) }
+    private val binding by lazy { DataBindingUtil.setContentView<ActivityMainBinding>(this, R.layout.activity_main) }
+//    private val adapterModel = SongViewModelAdapter(viewModel)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
         if (getPermission()) {
             val start = System.currentTimeMillis()
-            generateDatabase()
+            nativeWrapper.generateDatabase()
             val end = System.currentTimeMillis()
             Log.d("EXECUTION TIME", (end - start).toString())
-            val songs = retrieveSongs().toMutableList()
+
+            binding.apply {
+                setLifecycleOwner(this@MainActivity)
+            }
+
+            val songs = nativeWrapper.retrieveSongs().toMutableList()
             val adapter = SongRecyclerAdapter(songs)
-            recyclerView.layoutManager = LinearLayoutManager(applicationContext)
-            recyclerView.itemAnimator = DefaultItemAnimator()
-            adapter.onItemClickListener = object : RecyclerViewOnItemClickListener{
+
+            binding.recyclerView.layoutManager = LinearLayoutManager(applicationContext)
+            binding.recyclerView.itemAnimator = DefaultItemAnimator()
+            adapter.onItemClickListener = object : RecyclerViewOnItemClickListener {
                 override fun onItemclick(view: View, position: Int) {
-                    val intent = Intent(this@MainActivity,TagEditorActivity::class.java)
-                    intent.putExtra("SONG",adapter.songs[position])
+                    val intent = Intent(this@MainActivity, TagEditorActivity::class.java)
+                    intent.putExtra("SONG", adapter.songs[position])
                     startActivity(intent)
                 }
             }
-            recyclerView.adapter = adapter
+            binding.recyclerView.adapter = adapter
         }
 
     }
@@ -58,7 +68,7 @@ class MainActivity : AppCompatActivity() {
         when (requestCode) {
             PERMSSIONREADEXTERNALSTORAGE -> {
                 if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
-                    generateDatabase()
+                    nativeWrapper.generateDatabase()
                 } else {
                     return
                 }
@@ -67,14 +77,4 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    external fun generateDatabase(): Int
-    external fun retrieveSongs(): Array<Song>
-
-    companion object {
-
-        // Used to load the 'native-lib' library on application startup.
-        init {
-            System.loadLibrary("tagger")
-        }
-    }
 }

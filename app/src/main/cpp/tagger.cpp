@@ -101,10 +101,56 @@ Java_com_trippntechnology_tagger_MainActivity_generateDatabase(JNIEnv *env, jobj
     return insertErrors;
 }
 
+extern "C"
+JNIEXPORT jint
+JNICALL
+Java_com_trippntechnology_tagger_NativeWrapper_generateDatabase(JNIEnv *env, jobject /* this */) {
+    vector<string> files;
+    try {
+        files = getFiles("/storage/emulated/0/Music/");
+    } catch (fileAccessException) {
+        __android_log_print(ANDROID_LOG_ERROR, "ERROR",
+                            "Unable to access external drive. Insufficient permissions");
+        return -1;
+    }
+    vector<Song> allSongs;
+    allSongs.resize(files.size());
+    for (int i = 0; i < files.size(); i++) {
+
+        string sub = files[i].substr(files[i].find_last_of(".") + 1);
+        if (sub == "mp3") {
+            Mp3File mp3File(files[i].c_str());
+            Song *newSong = new Song(files[i], mp3File.getId3Tag());
+            allSongs[i] = *newSong;
+        }
+    }
+    int insertErrors = 0;
+    try {
+        SqlHelper sqlHelper;
+        sqlHelper.dropTable(sqlHelper.SONG_TABLE);
+        sqlHelper.createTable(sqlHelper.SONG_TABLE);
+        for (Song s:allSongs) {
+            if (sqlHelper.insertSong(s) != 101) {
+                insertErrors++;
+            }
+        }
+    } catch (databaseCreationError()) {
+        return -2;
+    }
+
+    allSongs.clear();
+    return insertErrors;
+}
+//extern "C"
+//JNIEXPORT jobjectArray
+//JNICALL Java_com_trippntechnology_tagger_MainActivity_retrieveSongs(JNIEnv *env, jobject) {
+//    SqlHelper sqlHelper;
+//    return sqlHelper.retrieveAllSongs(env);
+//}
 
 extern "C"
 JNIEXPORT jobjectArray
-JNICALL Java_com_trippntechnology_tagger_MainActivity_retrieveSongs(JNIEnv *env, jobject) {
+JNICALL Java_com_trippntechnology_tagger_NativeWrapper_retrieveSongs(JNIEnv *env, jobject) {
     SqlHelper sqlHelper;
     return sqlHelper.retrieveAllSongs(env);
 }
