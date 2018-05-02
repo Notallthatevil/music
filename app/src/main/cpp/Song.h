@@ -26,9 +26,13 @@ public:
 
     Song();
 
+    Song(vector<char> deserialize);
+
     ~Song();
 
-     string &getFilepath() ;
+    vector<char> generateTag();
+
+    string &getFilepath();
 
     void setFilepath(const string &filepath);
 
@@ -51,6 +55,10 @@ public:
     const string &getYear() const;
 
     const string &getTrack() const;
+
+    int getId() const;
+
+    void setId(int id);
 
 };
 

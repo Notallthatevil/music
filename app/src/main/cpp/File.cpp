@@ -5,10 +5,10 @@
 #include "File.h"
 
 
-File::File(const char *filepath) {
+File::File(string *filepath) {
     this->filepath = filepath;
-    fileStream = new ifstream(filepath, ios::ate);
-    size = (unsigned long) fileStream->tellg();
+    fileStream = new ifstream(filepath->c_str(), ios::ate);
+    fileSize = (unsigned long) fileStream->tellg();
     fileStream->seekg(position);
 }
 
@@ -22,13 +22,16 @@ char File::getNext() {
     return (Byte) fileStream->get();
 }
 
-const char *File::getFilepath() {
+string *File::getFilepath() {
     return filepath;
 }
 
-unsigned long File::getSize() {
-    return size;
+unsigned long File::getFileSize() {
+    return fileSize;
 }
 
+//File::File(Song newSong, Song oldSong) {
+//
+//}
 
 

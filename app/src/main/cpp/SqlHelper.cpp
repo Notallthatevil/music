@@ -3,7 +3,6 @@
 //
 
 #include "SqlHelper.h"
-#include "Song.h"
 
 inline bool file_exists(const std::string &name) {
     struct stat buffer;
@@ -102,4 +101,32 @@ jobjectArray SqlHelper::retrieveAllSongs(JNIEnv *env) {
         env->SetObjectArrayElement(jSongList, i, songList[i]);
     }
     return jSongList;
+}
+
+string SqlHelper::selectSong(Song song) {
+    stringstream ss;
+    ss << song.getId();
+    string sql =
+            "SELECT " + SONG_FILEPATH_COLUMN + " FROM " + SONG_TABLE + " WHERE " + SONG_ID_COLUMN +
+            " = " + ss.str();
+    sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, NULL);
+    sqlite3_step(stmt);
+    return string((char *) sqlite3_column_text(stmt, 0));
+}
+
+int SqlHelper::updateSong(Song song) {
+    stringstream ss;
+    ss << song.getId();
+    //TODO make sure strings are sql friendly i.e. no ' symbols without doubling them up first
+    string sql =
+            "UPDATE " + SONG_TABLE + " SET " + SONG_TITLE_COLUMN + " = '" + song.getTitle() + "', " +
+            SONG_ARTIST_COLUMN + " = '" + song.getArtist() + "', " +
+            SONG_ALBUM_COLUMN + " = '" + song.getAlbum() + "', " +
+            SONG_TRACK_COLUMN + " = '" + song.getTrack() + "', " +
+            SONG_YEAR_COLUMN + " = '" + song.getYear() +
+            "' WHERE " + SONG_ID_COLUMN + " = " + ss.str() +
+            ";";
+    sqlite3_prepare_v2(db,sql.c_str(),-1,&stmt,NULL);
+    int rc = sqlite3_step(stmt);
+    return rc;
 }

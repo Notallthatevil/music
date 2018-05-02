@@ -1,21 +1,14 @@
 package com.trippntechnology.tagger
 
+import android.arch.lifecycle.LiveData
 import android.arch.lifecycle.MutableLiveData
 import android.arch.lifecycle.ViewModel
 
-class TestViewModel(val nativeWrapper: NativeWrapper):ViewModel() {
+class TestViewModel(val nativeWrapper: NativeWrapper) : ViewModel() {
 
-    var songList : MutableLiveData<MutableList<Song>>
+    val songList: MutableLiveData<MutableList<Song>> = MutableLiveData()
 
     init {
-        songList = loadSongList()
+        songList.value = nativeWrapper.retrieveSongsMutable()
     }
-
-    fun loadSongList():MutableLiveData<MutableList<Song>>{
-        val mutableList = nativeWrapper.retrieveSongsMutable()
-        val mutableLiveData = MutableLiveData<MutableList<Song>>()
-        mutableLiveData.value = mutableList
-        return mutableLiveData
-    }
-
 }

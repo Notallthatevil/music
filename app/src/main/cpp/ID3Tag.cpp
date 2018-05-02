@@ -18,8 +18,8 @@ ID3Tag::ID3Tag(vector<char> *buf) {
             break;
         }
         frameSize =
-                (Byte) (*buf)[pos + 4] << 24 | (Byte) (*buf)[pos + 5] << 16 |
-                (Byte) (*buf)[pos + 6] << 8 | (Byte) (*buf)[pos + 7];
+                (Byte) (*buf)[pos + 4] << 21 | (Byte) (*buf)[pos + 5] << 14 |
+                (Byte) (*buf)[pos + 6] << 7 | (Byte) (*buf)[pos + 7];
 
         if (frameHeader == TITLETAG) {
             songData.Title = getTextFrame(buf, pos + 10, frameSize);
@@ -38,9 +38,88 @@ ID3Tag::ID3Tag(vector<char> *buf) {
     }
 }
 
-ID3Tag::~ID3Tag() {
 
+vector<char> ID3Tag::generateTags(SongData data) {
+    vector<char> tag;
+    if (data.Title != "") {
+        tag = concatenateVectors(tag, createTextFrame(TITLETAG, data.Title));
+    }
+    if (data.Artist != "") {
+        tag = concatenateVectors(tag, createTextFrame(ARTISTTAG, data.Artist));
+    }
+    if (data.Album != "") {
+        tag = concatenateVectors(tag, createTextFrame(ALBUMTAG, data.Album));
+    }
+    if (data.Track != "") {
+        tag = concatenateVectors(tag, createTextFrame(TRACKTAG, data.Track));
+    }
+    if (data.Year != "") {
+        tag = concatenateVectors(tag, createTextFrame(YEARTAG, data.Year));
+    }
+    vector<char> header(6);
+    header[0] = 'I';
+    header[1] = 'D';
+    header[2] = '3';
+    header[3] = MAJOR_VERSION;
+    header[4] = MINOR_VERSION;
+    //TODO add the ability to use ID3 flags
+    header[5] = 0x00;
+    header = concatenateVectors(header,calculateFrameSize((int)tag.size()));
+    tag = concatenateVectors(header,tag);
+    return tag;
 }
+
+vector<char> ID3Tag::calculateFrameSize(int dataSize) {
+    vector<char> unsynchFrameSize(4);
+    for (int i = 0; i < 4; i++) {
+        unsynchFrameSize[i] = (unsigned char) ((dataSize >> 21 - (7 * i)) & 0x7F);
+    }
+    return unsynchFrameSize;
+}
+
+
+//Returns array of bytes representing the data in the frame
+vector<char> ID3Tag::getTextFrameData(string frameData) {
+    const char *cData = frameData.c_str();
+    vector<char> newFrameData(frameData.size()+1);
+
+    //UTF-8 encoding
+    newFrameData[0] = 0x04;
+
+    for (int i = 0; i < frameData.length() + 1; i++) {
+        newFrameData[i + 1] = cData[i];
+    }
+    return newFrameData;
+}
+
+vector<char> ID3Tag::createTextFrame(const string frameHeader, string frameData) {
+    vector<char> tag;
+    tag = concatenateVectors(tag, getTextFrameData(frameData));
+    tag = concatenateVectors(createFrameFlags(), tag);
+    tag = concatenateVectors(calculateFrameSize((int) frameData.size()+1), tag);
+    vector<char> header(4);
+    for (int i = 0; i < 4; i++) {
+        header[i] = frameHeader.c_str()[i];
+    }
+    tag = concatenateVectors(header, tag);
+    return tag;
+}
+
+vector<char> ID3Tag::createFrameFlags() {
+    vector<char> flags(2);
+    flags[0] = 0x00;
+    flags[1] = 0x00;
+    return flags;
+}
+
+vector<char> ID3Tag::concatenateVectors(vector<char> vector1, vector<char> vector2) {
+    vector<char> newVector;
+    newVector.reserve(vector1.size() + vector2.size());
+    newVector.insert(newVector.end(), vector1.begin(), vector1.end());
+    newVector.insert(newVector.end(), vector2.begin(), vector2.end());
+    return newVector;
+}
+
 
 string ID3Tag::getTextFrame(vector<char> *buffer, int offset, size_t frameSize) {
     string frameData = "";
@@ -55,9 +134,9 @@ string ID3Tag::getTextFrame(vector<char> *buffer, int offset, size_t frameSize) 
             //utf-8
         default:
             for (int i = 1; i < frameSize; i++) {
-                if ((*buffer)[i + offset] == '\''){
+                if ((*buffer)[i + offset] == '\'') {
                     frameData += "''";
-                }else{
+                } else {
                     frameData += (*buffer)[i + offset];
                 }
             }
@@ -79,14 +158,14 @@ string ID3Tag::getUTF16String(vector<char> *buffer, int offset, size_t frameSize
         if ((*buffer)[i + offset + big] == 0x00 && (*buffer)[i + offset + little] == 0x00) {
             break;
         }
-        if((*buffer)[i + offset + big] == '\''){
-            frameData+= "''";
-        }else{
-            if((*buffer)[i+offset+big] == 0xe9){
+        if ((*buffer)[i + offset + big] == '\'') {
+            frameData += "''";
+        } else {
+            if ((*buffer)[i + offset + big] == 0xe9) {
                 frameData += 'e';
-            }else if((*buffer)[i+offset+big] == 0xf1){
+            } else if ((*buffer)[i + offset + big] == 0xf1) {
                 frameData += 'n';
-            }else{
+            } else {
                 frameData += (*buffer)[i + offset + big];
             }
         }
@@ -148,3 +227,19 @@ void ID3Tag::getBits(Byte byte, Byte bits[]) {
 const SongData &ID3Tag::getSongData() const {
     return songData;
 }
+
+ID3Tag::~ID3Tag() {
+
+}
+
+
+
+
+
+
+
+
+
+
+
+

@@ -9,6 +9,7 @@
 #include <fstream>
 #include <string>
 #include "Byte.h"
+
 using namespace std;
 
 struct fileAccessException : public exception {
@@ -22,23 +23,23 @@ struct fileAccessException : public exception {
 
 class File {
 private:
-    const char *filepath;
+    string *filepath;
     unsigned long position = 0;
-    unsigned long size = 0;
+    unsigned long fileSize = 0;
 
 
 protected:
     ifstream *fileStream;
 public:
-    File(const char *filepath);
+    File(string *filepath);
 
     virtual ~File();
 
     char getNext();
 
-    const char *getFilepath();
+    string *getFilepath();
 
-    unsigned long getSize();
+    unsigned long getFileSize();
 
 
 };

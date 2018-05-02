@@ -9,11 +9,10 @@
 #include <string>
 #include <vector>
 #include <regex>
-#include "File.h"
-typedef unsigned char Byte;
-
+#include "Byte.h"
 
 using namespace std;
+#define GET_VARIABLE_NAME(Variable) (#Variable);
 
 struct HeaderFlags {
     Byte version;
@@ -32,31 +31,45 @@ struct SongData {
     string Year;
 };
 
+
 class ID3Tag {
 private:
+    //CONSTANTS
+    const char *HEADER = "ID3";
+    const char MAJOR_VERSION = 0x04;
+    const char MINOR_VERSION = 0x00;
     const string TITLETAG = "TIT2";
     const string ALBUMTAG = "TALB";
     const string ARTISTTAG = "TPE1";
     const string TRACKTAG = "TRCK";
     const string YEARTAG = "TYER";
+
     HeaderFlags flags;
     SongData songData;
-
-
-private:
 
     string getUTF16String(vector<char> *buffer, int offset, size_t frameSize);
 
     string getTextFrame(vector<char> *buffer, int offset, size_t frameSize);
 
-public:
-    ID3Tag(vector<char> *buffer);
-
-    ~ID3Tag();
-
     void getBits(Byte byte, Byte *bits);
 
     HeaderFlags findFlags(vector<char> *tags);
+
+    vector<char> calculateFrameSize(int dataSize);
+    vector<char> concatenateVectors(vector<char> vector1, vector<char> vector2);
+    vector<char> createFrameFlags();
+    vector<char> createTextFrame(const string frameHeader, vector<char> synchSafeLength, vector<char> frameData);
+    vector<char> createTextFrame(const string frameHeader, string frameData);
+    vector<char> getTextFrameData(string frameData);
+
+public:
+    ID3Tag(vector<char> *buffer);
+
+    ID3Tag() {}
+
+    ~ID3Tag();
+
+    vector<char> generateTags(SongData data);
 
     const SongData &getSongData() const;
 
@@ -70,7 +83,6 @@ struct ID3TagException : public exception {
         return "ID3 Tag is not valid. May have errors parsing the file";
     }
 };
-
 
 
 #endif //TAGGER_ID3TAG_H

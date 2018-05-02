@@ -52,6 +52,10 @@ public:
 
     int insertSong(Song song);
 
+    int updateSong(Song song);
+
+    string selectSong(Song song);
+
     void makeSqlFriendly(string *str, const char *symbol);
 
     jobjectArray retrieveAllSongs(JNIEnv *env);

@@ -4,6 +4,11 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="com.trippntechnology.tagger.MainActivity">
 
+    <data>
+        <variable
+            name="viewModel"
+            type="com.trippntechnology.tagger.TestViewModel"/>
+    </data>
 
 
     <android.support.constraint.ConstraintLayout
@@ -14,7 +19,7 @@
             android:id="@+id/recyclerView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:scrollbars="vertical" />
+            android:scrollbars="vertical"/>
 
 
         <!--<TextView-->

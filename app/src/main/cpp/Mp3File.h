@@ -11,14 +11,18 @@
 #include <vector>
 #include <android/log.h>
 
-class Mp3File: File {
+class Mp3File : File {
 private:
-
     ID3Tag *id3Tag;
+    vector<char> mp3Data;
 public:
-    Mp3File(const char *filepath);
+    Mp3File(string *filepath);
+
     ~Mp3File();
+
     ID3Tag *getId3Tag() const;
+    const vector<char> &getMp3Data() const;
+
 };
 
 
