@@ -7,21 +7,22 @@
 
 
 #include "File.h"
-#include "ID3Tag.h"
+#include "../Tags/ID3Tag.h"
 #include <vector>
 #include <android/log.h>
 
 class Mp3File : File {
 private:
     ID3Tag *id3Tag;
-    vector<char> mp3Data;
+    Byte* mp3Data;
+
 public:
     Mp3File(string *filepath);
 
     ~Mp3File();
 
     ID3Tag *getId3Tag() const;
-    const vector<char> &getMp3Data() const;
+//    const vector<char> &getMp3Data() const;
 
 };
 

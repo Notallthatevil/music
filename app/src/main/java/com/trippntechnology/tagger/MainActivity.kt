@@ -36,7 +36,7 @@ class MainActivity : AppCompatActivity() {
             val start = System.currentTimeMillis()
             nativeWrapper.generateDatabase()
             val end = System.currentTimeMillis()
-            Log.d("EXECUTION TIME", (end - start).toString())
+            Log.d("TIME_EXECUTION", (end - start).toString())
             val songs = nativeWrapper.retrieveSongs().toMutableList()
 
             //VIEWMODEL SETUP

@@ -2,6 +2,7 @@
 // Created by natet on 4/7/2018.
 //
 
+#include <vector>
 #include "SqlHelper.h"
 
 inline bool file_exists(const std::string &name) {
@@ -21,7 +22,6 @@ SqlHelper::SqlHelper() {
 }
 
 SqlHelper::~SqlHelper() {
-    songsList.clear();
     sqlite3_finalize(stmt);
     sqlite3_close_v2(db);
 }
@@ -50,27 +50,27 @@ int SqlHelper::dropTable(string tableName) {
     return rc;
 }
 
-int SqlHelper::insertSong(Song song) {
-    if (song.getFilepath().find("'") != song.getFilepath().npos) {
-        makeSqlFriendly(&song.getFilepath(), "'");
+int SqlHelper::insertSong(AudioFile *audioFile) {
+    if (audioFile->getFilePath().find("'") != audioFile->getFilePath().npos) {
+        makeSqlFriendly(audioFile->getFilePath(), "'");
     }
     string sql = "INSERT INTO " + SONG_TABLE + "(TITLE,ARTIST,ALBUM,TRACK,YEAR,FILEPATH) VALUES('" +
-                 song.getTitle() + "', '" +
-                 song.getArtist() + "', '" +
-                 song.getAlbum() + "', '" +
-                 song.getTrack() + "', '" +
-                 song.getYear() + "', '" +
-                 song.getFilepath() + "');";
+                 audioFile->getTag()->getTitle() + "', '" +
+                 audioFile->getTag()->getArtist() + "', '" +
+                 audioFile->getTag()->getAlbum() + "', '" +
+                 audioFile->getTag()->getTrack() + "', '" +
+                 audioFile->getTag()->getYear() + "', '" +
+                 audioFile->getFilePath() + "');";
     sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, NULL);
     int rc = sqlite3_step(stmt);
     return rc;
 }
 
 
-void SqlHelper::makeSqlFriendly(string *str, const char *symbol) {
-    for (size_t i = 0; i < str->length(); i++) {
-        if ((*str)[i] == symbol[0]) {
-            str->insert(i, symbol);
+void SqlHelper::makeSqlFriendly(string str, const char *symbol) {
+    for (size_t i = 0; i < str.length(); i++) {
+        if (str[i] == symbol[0]) {
+            str.insert(i, symbol);
             i++;
         }
     }
@@ -103,9 +103,11 @@ jobjectArray SqlHelper::retrieveAllSongs(JNIEnv *env) {
     return jSongList;
 }
 
-string SqlHelper::selectSong(Song song) {
+//RETURNS the filepath of the song with the corresponding ID
+
+string SqlHelper::selectSong(AudioFile *audioFile) {
     stringstream ss;
-    ss << song.getId();
+    ss << audioFile->getID();
     string sql =
             "SELECT " + SONG_FILEPATH_COLUMN + " FROM " + SONG_TABLE + " WHERE " + SONG_ID_COLUMN +
             " = " + ss.str();
@@ -114,19 +116,20 @@ string SqlHelper::selectSong(Song song) {
     return string((char *) sqlite3_column_text(stmt, 0));
 }
 
-int SqlHelper::updateSong(Song song) {
+int SqlHelper::updateSong(AudioFile *audioFile) {
     stringstream ss;
-    ss << song.getId();
+    ss << audioFile->getID();
     //TODO make sure strings are sql friendly i.e. no ' symbols without doubling them up first
     string sql =
-            "UPDATE " + SONG_TABLE + " SET " + SONG_TITLE_COLUMN + " = '" + song.getTitle() + "', " +
-            SONG_ARTIST_COLUMN + " = '" + song.getArtist() + "', " +
-            SONG_ALBUM_COLUMN + " = '" + song.getAlbum() + "', " +
-            SONG_TRACK_COLUMN + " = '" + song.getTrack() + "', " +
-            SONG_YEAR_COLUMN + " = '" + song.getYear() +
+            "UPDATE " + SONG_TABLE + " SET " + SONG_TITLE_COLUMN + " = '" +
+            audioFile->getTag()->getTitle() + "', " +
+            SONG_ARTIST_COLUMN + " = '" + audioFile->getTag()->getArtist() + "', " +
+            SONG_ALBUM_COLUMN + " = '" + audioFile->getTag()->getAlbum() + "', " +
+            SONG_TRACK_COLUMN + " = '" + audioFile->getTag()->getTrack() + "', " +
+            SONG_YEAR_COLUMN + " = '" + audioFile->getTag()->getYear() +
             "' WHERE " + SONG_ID_COLUMN + " = " + ss.str() +
             ";";
-    sqlite3_prepare_v2(db,sql.c_str(),-1,&stmt,NULL);
+    sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, NULL);
     int rc = sqlite3_step(stmt);
     return rc;
 }

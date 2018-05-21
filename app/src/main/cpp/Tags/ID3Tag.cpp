@@ -1,6 +1,7 @@
 
 
 #include "ID3Tag.h"
+#include "ID3TagV2.h"
 
 
 ID3Tag::ID3Tag(vector<char> *buf) {

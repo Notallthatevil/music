@@ -19,11 +19,15 @@ add_library( # Sets the name of the library.
              # Provides a relative path to your source file(s).
              src/main/cpp/tagger.cpp
              src/main/cpp/Song.cpp
-             src/main/cpp/File.cpp
-             src/main/cpp/Mp3File.cpp
-             src/main/cpp/ID3Tag.cpp
-             src/main/cpp/sqlite3.c
-             src/main/cpp/SqlHelper.cpp)
+             src/main/cpp/Files/File.cpp
+             src/main/cpp/Files/Mp3File.cpp
+             src/main/cpp/Tags/ID3Tag.cpp
+             src/main/cpp/Sqlite/sqlite3.c
+             src/main/cpp/Sqlite/SqlHelper.cpp
+             src/main/cpp/Tags/Tag.cpp
+             src/main/cpp/Tags/ID3TagV2.cpp
+             src/main/cpp/Files/MP3FileV2.cpp
+             src/main/cpp/Files/AudioFile.cpp)
 
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because CMake includes system libraries in the search path by

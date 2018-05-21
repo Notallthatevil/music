@@ -8,16 +8,16 @@
 
 #include <fstream>
 #include <string>
-#include "Byte.h"
+#include "../Byte.h"
 
 using namespace std;
 
-struct fileAccessException : public exception {
-
-    const char *what() const throw() {
-        return "Unable to access files. i.e. Permission not granted";
-    }
-};
+//struct fileAccessException : public exception {
+//
+//    const char *what() const throw() {
+//        return "Unable to access files. i.e. Permission not granted";
+//    }
+//};
 
 
 

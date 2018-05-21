@@ -6,7 +6,7 @@
 #define TAGGER_SONG_H
 
 #include <string>
-#include "ID3Tag.h"
+#include "Tags/ID3Tag.h"
 
 using namespace std;
 

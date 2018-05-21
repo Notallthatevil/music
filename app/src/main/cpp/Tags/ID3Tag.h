@@ -9,7 +9,8 @@
 #include <string>
 #include <vector>
 #include <regex>
-#include "Byte.h"
+#include "../Byte.h"
+#include "Tag.h"
 
 using namespace std;
 #define GET_VARIABLE_NAME(Variable) (#Variable);
@@ -56,10 +57,16 @@ private:
     HeaderFlags findFlags(vector<char> *tags);
 
     vector<char> calculateFrameSize(int dataSize);
+
     vector<char> concatenateVectors(vector<char> vector1, vector<char> vector2);
+
     vector<char> createFrameFlags();
-    vector<char> createTextFrame(const string frameHeader, vector<char> synchSafeLength, vector<char> frameData);
+
+    vector<char>
+    createTextFrame(const string frameHeader, vector<char> synchSafeLength, vector<char> frameData);
+
     vector<char> createTextFrame(const string frameHeader, string frameData);
+
     vector<char> getTextFrameData(string frameData);
 
 public:
@@ -75,14 +82,12 @@ public:
 
     static int getTagSize(char *tagHeader);
 
+
+
+
 };
 
-struct ID3TagException : public exception {
 
-    const char *what() const throw() {
-        return "ID3 Tag is not valid. May have errors parsing the file";
-    }
-};
 
 
 #endif //TAGGER_ID3TAG_H
