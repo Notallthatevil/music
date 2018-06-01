@@ -2,7 +2,6 @@
 // Created by natet on 4/7/2018.
 //
 
-#include <vector>
 #include "SqlHelper.h"
 
 inline bool file_exists(const std::string &name) {
@@ -81,7 +80,7 @@ jobjectArray SqlHelper::retrieveAllSongs(JNIEnv *env) {
     sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, NULL);
     jclass jSongClass = env->FindClass("com/trippntechnology/tagger/Song");
     jmethodID jSongConstructor = env->GetMethodID(jSongClass, "<init>",
-                                                  "(ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+                                                  "(ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[B)V");
     vector<jobject> songList;
     while (sqlite3_step(stmt) == SQLITE_ROW) {
         jint jID = sqlite3_column_int(stmt, SONG_ID_NUMBER);
@@ -93,7 +92,7 @@ jobjectArray SqlHelper::retrieveAllSongs(JNIEnv *env) {
         jstring jFilepath = env->NewStringUTF(
                 (char *) sqlite3_column_text(stmt, SONG_FILEPATH_NUMBER));
         jobject jSong = env->NewObject(jSongClass, jSongConstructor, jID, jTitle, jArtist, jAlbum,
-                                       jTrack, jYear, jFilepath);
+                                       jTrack, jYear, jFilepath,NULL);
         songList.push_back(jSong);
     }
     jobjectArray jSongList = env->NewObjectArray((jint) songList.size(), jSongClass, NULL);

@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 #include <sstream>
 #include "../Files/AudioFile.h"
+#include <vector>
 
 using namespace std;
 
