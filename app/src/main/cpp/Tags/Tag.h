@@ -8,6 +8,7 @@
 
 #include "../Byte.h"
 #include <string>
+#include <vector>
 
 using namespace std;
 
@@ -19,7 +20,7 @@ protected: //NOTE:Tag data
     string Album;
     string Track;
     string Year;
-    char * Cover;
+    unsigned char *Cover;
 
 public:
     Tag();
@@ -38,7 +39,19 @@ public:
 
     const string &getYear() const;
 
-    char *getCover() const;
+    unsigned char *getCover() const;
+
+    void setTitle(const string &Title);
+
+    void setArtist(const string &Artist);
+
+    void setAlbum(const string &Album);
+
+    void setTrack(const string &Track);
+
+    void setYear(const string &Year);
+
+    void setCover(unsigned char *Cover);
 };
 
 

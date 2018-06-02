@@ -10,13 +10,16 @@
 #include "../Tags/ID3TagV2.h"
 
 class Mp3FileV2 : public AudioFile {
-private:
-    ID3TagV2 *id3Tag;
 
+private:
+    ID3TagV2 *id3Tag = nullptr;
 
 public:
     Mp3FileV2(string *filePath, bool findTags);
-    Mp3FileV2(){}
+
+    Mp3FileV2(vector<unsigned char> deserialize);
+
+    Mp3FileV2() {}
 
     ~Mp3FileV2();
 

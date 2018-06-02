@@ -18,7 +18,7 @@ class TagEditorActivity : AppCompatActivity() {
         editTextYear.setText(song.Year,TextView.BufferType.EDITABLE)
         val nativeWrapper = NativeWrapper()
         buttonAccept.setOnClickListener({
-            val newSong = Song(song.ID,editTextTitle.text.toString(), editTextAlbum.text.toString(),editTextArtist.text.toString(),editTextTrack.text.toString(),editTextYear.text.toString(),song.Filepath)
+            val newSong = Song(song.ID,editTextTitle.text.toString(), editTextArtist.text.toString(),editTextAlbum.text.toString(),editTextTrack.text.toString(),editTextYear.text.toString(),song.FilePath,null)
             var rc = nativeWrapper.saveNewTag(newSong.serialize())
         })
     }

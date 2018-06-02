@@ -4,7 +4,7 @@
 
 #include "ID3TagV2.h"
 
-ID3TagV2::ID3TagV2(char *header) : Tag() {
+ID3TagV2::ID3TagV2(unsigned char *header) : Tag() {
     if (header[0] == 'I' && header[1] == 'D' && header[2] == '3' && header[3] >= 3) {
         unsigned int byte0 = (Byte) header[6];
         unsigned int byte1 = (Byte) header[7];
@@ -15,11 +15,12 @@ ID3TagV2::ID3TagV2(char *header) : Tag() {
         minorVersion = header[4];
         if (header[3] == 4 && ((header[5] & (0b00010000)) != 0)) {
             footer = true;
-            tagSize = synchSafeInt + 20;
+            headerSize = 20;
         } else {
             footer = false;
-            tagSize = synchSafeInt + 10;
+            headerSize = 10;
         }
+        tagSize = headerSize + synchSafeInt;
         readFlags(header[5]);
     } else {
         throw ID3TagException();
@@ -40,10 +41,13 @@ void ID3TagV2::readFlags(char flagByte) {
 
 
 void ID3TagV2::readTags(unsigned char *tagBuffer) {
+    if (tagSize == 0) {
+        throw ID3TagException();
+    }
     int pos = 0;
     int frameSize = 0;
     string frameHeader;
-    while (pos < tagSize) {
+    while (pos < tagSize - headerSize) {
         frameHeader += tagBuffer[pos];
         frameHeader += tagBuffer[pos + 1];
         frameHeader += tagBuffer[pos + 2];
@@ -136,4 +140,8 @@ unsigned char *ID3TagV2::generateTags() {
 
 long ID3TagV2::getTagSize() const {
     return tagSize;
+}
+
+int ID3TagV2::getHeaderSize() const {
+    return headerSize;
 }

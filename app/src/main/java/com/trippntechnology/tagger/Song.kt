@@ -6,88 +6,106 @@ import java.nio.ByteBuffer
 class Song {
     var ID: Int = 0
     var Title: String? = null
-    var Album: String? = null
     var Artist: String? = null
+    var Album: String? = null
     var Track: String? = null
     var Year: String? = null
-    lateinit var Filepath: String
+    lateinit var FilePath: String
+    var Cover: ByteArray? = null
 
-    constructor(ID: Int, Title: String, Artist: String, Album: String, Track: String, Year: String, Filepath: String) {
+    constructor(ID: Int, Title: String?, Artist: String?, Album: String?, Track: String?, Year: String?, Filepath: String, Cover: ByteArray?) {
         this.ID = ID
         this.Title = Title
         this.Artist = Artist
         this.Album = Album
         this.Track = Track
         this.Year = Year
-        this.Filepath = Filepath
+        this.FilePath = Filepath
+        this.Cover = Cover
     }
 
     constructor(deserialize: ByteArray) {
-        ID = ByteBuffer.wrap(deserialize, 0, 4).int
+        ID = ByteBuffer.wrap(deserialize, 1, 4).int
         var assign = 0
-        var offset = 4
+        var offset = 5
         while (offset < deserialize.size) {
             val length = ByteBuffer.wrap(deserialize, offset, 4).int
-            when (assign) {
-                0 -> Title = String(deserialize, offset + 4, length)
-                1 -> Artist = String(deserialize, offset + 4, length)
-                2 -> Album = String(deserialize, offset + 4, length)
-                3 -> Track = String(deserialize, offset + 4, length)
-                4 -> Year = String(deserialize, offset + 4, length)
-                5 -> Filepath = String(deserialize, offset + 4, length)
+            offset += 4
+            if (length != 0) {
+                when (assign) {
+                    0 -> Title = deserializeString(deserialize.copyOfRange(offset, offset + length))
+                    1 -> Artist = deserializeString(deserialize.copyOfRange(offset, offset + length))
+                    2 -> Album = deserializeString(deserialize.copyOfRange(offset, offset + length))
+                    3 -> Track = deserializeString(deserialize.copyOfRange(offset, offset + length))
+                    4 -> Year = deserializeString(deserialize.copyOfRange(offset, offset + length))
+                    5 -> FilePath = deserializeString(deserialize.copyOfRange(offset, offset + length))!!
+                    6 -> Cover = deserializeCover(deserialize.copyOfRange(offset, offset + length))
+                }
             }
-            offset += 4 + length
+            offset += length
             assign++
         }
     }
 
+    private fun deserializeCover(buffer: ByteArray): ByteArray? {
+        //Represents "'N' 'U' 'L' 'L'"
+        val flagBuf = byteArrayOf(78, 85, 76, 76)
+        if (buffer.contentEquals(flagBuf)) {
+            return null
+        }
+        return buffer
+    }
+
+    private fun deserializeString(buffer: ByteArray): String? {
+        return String(buffer)
+    }
+
     fun serialize(): ByteArray {
-        val idBytes = ByteBuffer.allocate(4).putInt(ID).array()
-        val titBytes: ByteArray = if (Title == null || Title == "") {
-            "NULL".toByteArray()
-        } else {
-            Title!!.toByteArray()
+        var serialized = identifyFileType(FilePath)
+        serialized = concatenateByteArrays(serialized, intToBytes(ID))
+        serialized = concatenateByteArrays(serialized, serializeString(Title))
+        serialized = concatenateByteArrays(serialized, serializeString(Artist))
+        serialized = concatenateByteArrays(serialized, serializeString(Album))
+        serialized = concatenateByteArrays(serialized, serializeString(Track))
+        serialized = concatenateByteArrays(serialized, serializeString(Year))
+        serialized = concatenateByteArrays(serialized, serializeString(FilePath))
+        serialized = concatenateByteArrays(serialized, serializeCover(Cover))
+        return serialized
+    }
 
-        }
-        val albBytes: ByteArray = if (Album == null || Album == "") {
-            "NULL".toByteArray()
-        } else {
-            Album!!.toByteArray()
+    private fun concatenateByteArrays(byteArray1: ByteArray, byteArray2: ByteArray): ByteArray {
+        val newArray = ByteArray(byteArray1.size + byteArray2.size)
+        System.arraycopy(byteArray1, 0, newArray, 0, byteArray1.size)
+        System.arraycopy(byteArray2, 0, newArray, byteArray1.size, byteArray2.size)
+        return newArray
+    }
 
+    private fun serializeCover(cover: ByteArray?): ByteArray {
+        return if (cover == null){
+            intToBytes(0)
+        }else{
+            concatenateByteArrays(intToBytes(cover.size),cover)
         }
-        val artBytes: ByteArray = if (Artist == null || Artist == "") {
-            "NULL".toByteArray()
-        } else {
-            Artist!!.toByteArray()
+    }
 
-        }
-        val traBytes: ByteArray = if (Track == null || Track == "") {
-            "NULL".toByteArray()
-        } else {
-            Track!!.toByteArray()
+    private fun serializeString(frameData: String?): ByteArray {
+        val output = frameData!!.toByteArray()
+        return concatenateByteArrays(intToBytes(output.size), output)
+    }
 
-        }
-        val yeaBytes: ByteArray = if (Year == null || Year == "") {
-            "NULL".toByteArray()
-        } else {
-            Year!!.toByteArray()
+    private fun intToBytes(int: Int): ByteArray {
+        return ByteBuffer.allocate(4).putInt(int).array()
+    }
 
+    private fun identifyFileType(FilePath: String): ByteArray {
+        val extension = FilePath.substringAfterLast('.')
+        val byteArray = ByteArray(1)
+        when (extension) {
+            "mp3" -> byteArray[0] = 0x00
+            "m4a" -> byteArray[0] = 0x01
+            "flac" -> byteArray[0] = 0x02
+            else -> byteArray[0] = -0x01
         }
-        val filBytes: ByteArray = Filepath.toByteArray()
-        val outputStream = ByteArrayOutputStream()
-        outputStream.write(idBytes)
-        outputStream.write(ByteBuffer.allocate(4).putInt(titBytes.size).array())
-        outputStream.write(titBytes)
-        outputStream.write(ByteBuffer.allocate(4).putInt(artBytes.size).array())
-        outputStream.write(artBytes)
-        outputStream.write(ByteBuffer.allocate(4).putInt(albBytes.size).array())
-        outputStream.write(albBytes)
-        outputStream.write(ByteBuffer.allocate(4).putInt(traBytes.size).array())
-        outputStream.write(traBytes)
-        outputStream.write(ByteBuffer.allocate(4).putInt(yeaBytes.size).array())
-        outputStream.write(yeaBytes)
-        outputStream.write(ByteBuffer.allocate(4).putInt(filBytes.size).array())
-        outputStream.write(filBytes)
-        return outputStream.toByteArray()
+        return byteArray
     }
 }

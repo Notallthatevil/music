@@ -32,6 +32,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (getPermission()) {
+
             //NATIVE CALLs
             val start = System.currentTimeMillis()
             nativeWrapper.generateDatabase()

@@ -34,7 +34,13 @@ typedef vector<vector<string>> VectorList;
 
 
 //TODO create UTF8 string for c++ to be able to write utf8 strings and retrieve them. Especially helpful for database stuff
-vector<string> getFiles(string directory) {
+
+
+/*
+ * Returns a list of all audio files given in the @param directory
+ * directory - The directory to be searched for audio files. Must be an absolute file path
+ */
+vector<string> getAudioFiles(string directory) {
     DIR *d;
     VectorList vectorList;
     vector<string> stringList;
@@ -45,9 +51,10 @@ vector<string> getFiles(string directory) {
             string dirName(dir->d_name);
             if (dirName != "." && dirName != "..") {
                 string newDir = directory + dirName + "/";
+
                 //If it is a directory search it
                 if (opendir(newDir.c_str()) != NULL) {
-                    vectorList.push_back(getFiles(newDir));
+                    vectorList.push_back(getAudioFiles(newDir));
                 } else {
                     string sub = dirName.substr(dirName.find_last_of(".") + 1);
                     if (sub == "mp3") {
@@ -73,14 +80,13 @@ vector<string> getFiles(string directory) {
     return completeList;
 }
 
-template <typename T>
-void delete_pointed_to(T* const ptr)
-{
+template<typename T>
+void delete_pointed_to(T *const ptr) {
     delete ptr;
 }
 
 /**
- * Returns an int based on the success of creating a database or the number of songs that failed to be inserted
+ * Returns an int based on the success of creating a database
  *
  * 0  = all operations were successful
  * -1 = unable to access files i.e. user has not granted permission
@@ -93,7 +99,7 @@ Java_com_trippntechnology_tagger_NativeWrapper_generateDatabase(JNIEnv *env, job
     //Retrieve file paths for all audio files
     vector<string> files;
     try {
-        files = getFiles("/storage/emulated/0/Music/");
+        files = getAudioFiles("/storage/emulated/0/Music/");
     } catch (fileAccessException) {
         __android_log_print(ANDROID_LOG_ERROR, "ERROR",
                             "Unable to access external drive. Insufficient permissions");
@@ -101,12 +107,12 @@ Java_com_trippntechnology_tagger_NativeWrapper_generateDatabase(JNIEnv *env, job
     }
 
     //Retrieve tags from songs
-    vector<AudioFile*> audioFiles(files.size());
+    vector<AudioFile *> audioFiles(files.size());
     for (int i = 0; i < files.size(); i++) {
 
         string sub = files[i].substr(files[i].find_last_of(".") + 1);
         if (sub == "mp3") {
-            audioFiles[i] =  new Mp3FileV2(&files[i], true);
+            audioFiles[i] = new Mp3FileV2(&files[i], true);
         }
     }
 
@@ -125,7 +131,7 @@ Java_com_trippntechnology_tagger_NativeWrapper_generateDatabase(JNIEnv *env, job
     } catch (databaseCreationError()) {
         return -2;
     }
-    for_each(audioFiles.begin(),audioFiles.end(),delete_pointed_to<AudioFile>);
+    for_each(audioFiles.begin(), audioFiles.end(), delete_pointed_to<AudioFile>);
 
 
     return insertErrors;
