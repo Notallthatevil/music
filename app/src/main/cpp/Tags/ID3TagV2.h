@@ -8,12 +8,11 @@
 
 #include "Tag.h"
 #include <string>
-#include <vector>
 
 using namespace std;
 
-class ID3TagV2: public Tag {
-public:     //NOTE: CONSTANTS
+class ID3TagV2 : public Tag {
+public: //NOTE: CONSTANTS
     static const int HEADER_SIZE = 10;
     const string TITLETAG = "TIT2";
     const string ALBUMTAG = "TALB";
@@ -34,17 +33,25 @@ private: //NOTE:Header flags
     bool footer;
 
 private:
-    long tagSize = 0;
     int headerSize = 0;
 
 
-    //NOTE:Methods
-private:
+private: //NOTE:Methods
     void readFlags(char flagByte);
 
     string getTextFrame(unsigned char *buffer, int offset, int frameSize);
 
     string getUTF16String(unsigned char *buffer, int offset, int frameSize);
+
+    vector<char> createTextFrame(const string frameID, string data);
+
+    vector<char> toSynchSafeInt(unsigned long dataSize);
+
+    vector<char> createFrameFlags();
+
+//    vector<char> createAPICFrame(const string frameID, unsigned char *cover);
+    char getFlagByte();
+
 
 public:
     ID3TagV2() : Tag() {}
@@ -53,11 +60,10 @@ public:
 
     ~ID3TagV2();
 
-    unsigned char *generateTags();
+    vector<char> generateTags();
 
     void readTags(unsigned char *tagBuffer);
 
-    long getTagSize() const;
 
     int getHeaderSize() const;
 

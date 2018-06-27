@@ -57,12 +57,17 @@ void Tag::setYear(const string &Year) {
 }
 
 void Tag::setCover(unsigned char *Cover) {
-    if (Cover[0] == 'N' && Cover[1] == 'U' && Cover[2] == 'L' && Cover[3] == 'L') {
-        Tag::Cover = nullptr;
-    } else {
-        Tag::Cover = Cover;
-    }
+    Tag::Cover = Cover;
 }
+
+long Tag::getCoverSize() const {
+    return coverSize;
+}
+
+long Tag::getTagSize() const {
+    return tagSize;
+}
+
 
 
 

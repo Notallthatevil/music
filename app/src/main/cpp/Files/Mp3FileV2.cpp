@@ -28,7 +28,7 @@ Mp3FileV2::Mp3FileV2(string *filePath, bool findTags) : AudioFile(filePath) {
 
 }
 
-Mp3FileV2::Mp3FileV2(vector<unsigned char> deserialize) : AudioFile(deserialize) {
+Mp3FileV2::Mp3FileV2(vector<char> deserialize) : AudioFile(deserialize) {
     id3Tag = new ID3TagV2;
     setID(int((unsigned char) deserialize[1] << 24 |
               (unsigned char) deserialize[2] << 16 |
@@ -79,8 +79,10 @@ Mp3FileV2::~Mp3FileV2() {
     id3Tag = nullptr;
 }
 
-char *Mp3FileV2::getAudio() {
-    return nullptr;
+AudioData Mp3FileV2::getAudio()  {
+    audioData.size = getFileSize() - id3Tag->getTagSize();
+    stream->seekg(id3Tag->getTagSize(),ios_base::beg);
+    return AudioFile::getAudio();
 }
 
 Tag *Mp3FileV2::getTag() {

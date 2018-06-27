@@ -14,6 +14,10 @@ AudioFile::AudioFile(string *filePath) {
 AudioFile::~AudioFile() {
     delete stream;
     stream = nullptr;
+    if (audioData.data!= nullptr){
+        delete [] audioData.data;
+        audioData.data = nullptr;
+    }
 }
 
 string AudioFile::getFilePath() const {
@@ -34,5 +38,11 @@ void AudioFile::setID(int ID) {
 
 void AudioFile::setFilePath(const string &filePath) {
     AudioFile::filePath = filePath;
+}
+
+AudioData AudioFile::getAudio() {
+    audioData.data = new char[audioData.size];
+    stream->read(audioData.data,audioData.size);
+    return audioData;
 }
 

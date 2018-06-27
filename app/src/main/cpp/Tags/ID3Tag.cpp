@@ -106,13 +106,13 @@ vector<char> ID3Tag::createTextFrame(const string frameHeader, string frameData)
     return tag;
 }
 
+
 vector<char> ID3Tag::createFrameFlags() {
     vector<char> flags(2);
     flags[0] = 0x00;
     flags[1] = 0x00;
     return flags;
 }
-
 vector<char> ID3Tag::concatenateVectors(vector<char> vector1, vector<char> vector2) {
     vector<char> newVector;
     newVector.reserve(vector1.size() + vector2.size());

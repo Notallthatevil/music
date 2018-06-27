@@ -18,7 +18,6 @@ add_library( # Sets the name of the library.
 
              # Provides a relative path to your source file(s).
              src/main/cpp/tagger.cpp
-             src/main/cpp/Song.cpp
              src/main/cpp/Files/File.cpp
              src/main/cpp/Files/Mp3File.cpp
              src/main/cpp/Tags/ID3Tag.cpp

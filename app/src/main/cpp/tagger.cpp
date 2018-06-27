@@ -5,7 +5,6 @@
 #include <dirent.h>
 #include <algorithm>
 #include <exception>
-#include "Song.h"
 #include "Files/File.h"
 #include "Files/Mp3File.h"
 #include "Sqlite/SqlHelper.h"
@@ -148,10 +147,25 @@ extern "C"
 JNIEXPORT jint
 JNICALL Java_com_trippntechnology_tagger_NativeWrapper_saveNewTag(JNIEnv *env, jobject,
                                                                   jbyteArray jSerialized) {
-//    int length = env->GetArrayLength(jSerialized);
-//    vector<char> buf(length);
-//    env->GetByteArrayRegion(jSerialized, 0, length, (jbyte *) &buf[0]);
-//    Song song(buf);
+    int length = env->GetArrayLength(jSerialized);
+    vector<char> buf(length);
+    env->GetByteArrayRegion(jSerialized, 0, length, (jbyte *) &buf[0]);
+    Mp3FileV2 song(buf);
+    string filePath = song.getFilePath();
+    vector<char> newTags = song.getTag()->generateTags();
+//    AudioData oldData = Mp3FileV2(&filePath, false).getAudio();
+//    long tagSize = newTags.size();
+//    newTags.resize(tagSize+oldData.size);
+//
+//    for (long i=tagSize;i<newTags.size();i++){
+//        newTags[i] = oldData.data[i-tagSize];
+//    }
+//
+//    SqlHelper sqlHelper;
+//    FILE *f = fopen(filePath.c_str(),"w+");
+//    fwrite(newTags.data(), sizeof(char),newTags.size(),f);
+//    fclose(f);
+//    sqlHelper.updateSong(&song);
 //    SqlHelper sqlHelper;
 //    string filepath = sqlHelper.selectSong(song);
 //    Mp3File mp3(&filepath);

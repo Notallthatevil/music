@@ -17,15 +17,17 @@ private:
 public:
     Mp3FileV2(string *filePath, bool findTags);
 
-    Mp3FileV2(vector<unsigned char> deserialize);
+    Mp3FileV2(vector<char> deserialize);
 
     Mp3FileV2() {}
 
     ~Mp3FileV2();
 
-    char *getAudio();
+    AudioData getAudio();
 
     Tag *getTag() override;
+
+
 };
 
 

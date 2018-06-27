@@ -20,12 +20,15 @@ protected: //NOTE:Tag data
     string Album;
     string Track;
     string Year;
-    unsigned char *Cover;
+    unsigned char *Cover = nullptr;
+    long coverSize = 0;
+    long tagSize = 0;
+
 
 public:
     Tag();
     virtual ~Tag();
-    virtual unsigned char *generateTags()=0;
+    virtual vector<char> generateTags()=0;
     virtual void readTags(unsigned char *tagBuffer)=0;
 
 
@@ -52,6 +55,11 @@ public:
     void setYear(const string &Year);
 
     void setCover(unsigned char *Cover);
+
+    long getCoverSize() const;
+
+    long getTagSize() const;
+
 };
 
 
