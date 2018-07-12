@@ -17,6 +17,12 @@ import android.util.Log
 import android.view.View
 import com.trippntechnology.tagger.databinding.ActivityMainBinding
 
+
+
+//Notice all kotlin code is for testing purposes only and does not represent the final project
+
+
+
 class MainActivity : AppCompatActivity() {
 
     private val PERMISSION_WRITE_EXTERNAL_STORAGE: Int = 6745
