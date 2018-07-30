@@ -150,37 +150,21 @@ JNICALL Java_com_trippntechnology_tagger_NativeWrapper_saveNewTag(JNIEnv *env, j
     int length = env->GetArrayLength(jSerialized);
     vector<char> buf(length);
     env->GetByteArrayRegion(jSerialized, 0, length, (jbyte *) &buf[0]);
+
     Mp3FileV2 song(buf);
+
     string filePath = song.getFilePath();
     vector<char> newTags = song.getTag()->generateTags();
-//    AudioData oldData = Mp3FileV2(&filePath, false).getAudio();
-//    long tagSize = newTags.size();
-//    newTags.resize(tagSize+oldData.size);
-//
-//    for (long i=tagSize;i<newTags.size();i++){
-//        newTags[i] = oldData.data[i-tagSize];
-//    }
-//
-//    SqlHelper sqlHelper;
-//    FILE *f = fopen(filePath.c_str(),"w+");
-//    fwrite(newTags.data(), sizeof(char),newTags.size(),f);
-//    fclose(f);
-//    sqlHelper.updateSong(&song);
-//    SqlHelper sqlHelper;
-//    string filepath = sqlHelper.selectSong(song);
-//    Mp3File mp3(&filepath);
-//    ID3Tag tag;
-//    SongData data;
-//    data.Title = song.getTitle();
-//    data.Artist = song.getArtist();
-//    data.Album = song.getAlbum();
-//    data.Year = song.getYear();
-//    data.Track = song.getTrack();
-//    vector<char> newSong = tag.generateTags(data);
-//    newSong.insert(newSong.end(),mp3.getMp3Data().begin(),mp3.getMp3Data().end());
-//    FILE * f = fopen(song.getFilepath().c_str(),"w+");
-//    fwrite(newSong.data(), sizeof(char), newSong.size(),f);
-//    fclose(f);
-//    sqlHelper.updateSong(song);
+
+    vector<char> audioData = Mp3FileV2(&filePath, false).getAudio();
+
+    newTags.insert(newTags.end(),audioData.begin(),audioData.end());
+
+    SqlHelper sqlHelper;
+    FILE *f = fopen(filePath.c_str(),"w+");
+    fwrite(newTags.data(), sizeof(char),newTags.size(),f);
+    fclose(f);
+    sqlHelper.updateSong(&song);
+
     return 1;
 }

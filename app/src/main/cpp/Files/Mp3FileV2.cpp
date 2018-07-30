@@ -79,8 +79,8 @@ Mp3FileV2::~Mp3FileV2() {
     id3Tag = nullptr;
 }
 
-AudioData Mp3FileV2::getAudio()  {
-    audioData.size = getFileSize() - id3Tag->getTagSize();
+vector<char> Mp3FileV2::getAudio()  {
+    audioData.resize(getFileSize() - id3Tag->getTagSize());
     stream->seekg(id3Tag->getTagSize(),ios_base::beg);
     return AudioFile::getAudio();
 }

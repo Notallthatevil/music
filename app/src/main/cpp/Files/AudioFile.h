@@ -26,10 +26,6 @@ struct audioFileDeserializationException : public exception {
     }
 };
 
-struct AudioData{
-    char *data = nullptr;
-    long size = 0;
-};
 
 class AudioFile {
 private:
@@ -39,8 +35,8 @@ private:
     long audioOffset = 0;
 
 protected:
-    ifstream *stream;
-    AudioData audioData;
+    ifstream *stream = nullptr;
+    vector<char> audioData;
 
 public:
     AudioFile() {}
@@ -57,7 +53,7 @@ public:
 
     unsigned long getFileSize() const;
 
-    virtual AudioData getAudio();
+    virtual vector<char> getAudio();
 
     virtual Tag* getTag() = 0;
 

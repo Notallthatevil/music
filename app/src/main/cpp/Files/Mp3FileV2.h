@@ -23,7 +23,7 @@ public:
 
     ~Mp3FileV2();
 
-    AudioData getAudio();
+    vector<char> getAudio() override;
 
     Tag *getTag() override;
 
