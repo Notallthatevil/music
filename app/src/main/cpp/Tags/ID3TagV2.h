@@ -22,6 +22,10 @@ public: //NOTE: CONSTANTS
     const string COVERTAG = "APIC";
     const unsigned char MAJOR_VERSION = 0x04;
     const unsigned char MINOR_VERSION = 0x00;
+    const char ISO_8859_1 = 0x00;
+    const char UTF_16 = 0x01;
+    const char UTF_16BE = 0x02;
+    const char UTF_8 = 0x03;
 
 
 private: //NOTE:Header flags

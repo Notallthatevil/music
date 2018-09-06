@@ -79,13 +79,13 @@ string ID3TagV2::getTextFrame(unsigned char *buffer, int offset, int frameSize) 
     string frameData = "";
     switch (buffer[offset]) {
         case 0x01:
-            //utf-16
+            //UTF-16
             frameData = getUTF16String(buffer, offset, frameSize);
             break;
         case 0x00:
-            //iso
+            //ISO-8859-1
         case 0x03:
-            //utf-8
+            //UTF-8
         default:
             for (int i = 1; i < frameSize; i++) {
                 if (buffer[i + offset] == '\'') {
@@ -155,7 +155,7 @@ vector<char> ID3TagV2::generateTags() {
 //        auto frame = createAPICFrame(COVERTAG,Cover){
 //
 //        }
-    vector<char> header{'I','D','3',0x04,0x00,getFlagByte()};
+    vector<char> header{'I','D','3',UTF_8,0x00,getFlagByte()};
     auto size = toSynchSafeInt(tag.size());
     header.insert(header.end(),size.begin(),size.end());
     header.insert(header.end(),tag.begin(),tag.end());
@@ -169,7 +169,7 @@ vector<char> ID3TagV2::createTextFrame(const string frameID, string data) {
     //Frame Flags
     auto flags = createFrameFlags();
     //Text incoding
-    char textEncoding = 0x04;
+    char textEncoding = UTF_8;
     //Frame ID
     vector<char> frame{frameID[0],frameID[1],frameID[2],frameID[3],synchSafeInt[0],synchSafeInt[1],synchSafeInt[2],synchSafeInt[3],flags[0],flags[1],textEncoding};
 
