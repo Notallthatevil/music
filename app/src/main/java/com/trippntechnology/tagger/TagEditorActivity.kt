@@ -3,6 +3,7 @@ package com.trippntechnology.tagger
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.widget.TextView
+import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_tag_editor.*
 
 class TagEditorActivity : AppCompatActivity() {
@@ -17,9 +18,10 @@ class TagEditorActivity : AppCompatActivity() {
         editTextTrack.setText(song.Track,TextView.BufferType.EDITABLE)
         editTextYear.setText(song.Year,TextView.BufferType.EDITABLE)
         val nativeWrapper = NativeWrapper()
-        buttonAccept.setOnClickListener({
+        buttonAccept.setOnClickListener {
             val newSong = Song(song.ID,editTextTitle.text.toString(), editTextArtist.text.toString(),editTextAlbum.text.toString(),editTextTrack.text.toString(),editTextYear.text.toString(),song.FilePath,null)
             var rc = nativeWrapper.saveNewTag(newSong.serialize())
-        })
+            Toast.makeText(applicationContext,"Tags successfully saved",Toast.LENGTH_SHORT).show()
+        }
     }
 }

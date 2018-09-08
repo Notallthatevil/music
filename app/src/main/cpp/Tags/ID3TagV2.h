@@ -47,6 +47,8 @@ private: //NOTE:Methods
 
     string getUTF16String(unsigned char *buffer, int offset, int frameSize);
 
+//    unsigned char* getAPICFrame(unsigned char *buffer,int offset, int frameSize);
+
     vector<char> createTextFrame(const string frameID, string data);
 
     vector<char> toSynchSafeInt(unsigned long dataSize);
@@ -67,7 +69,6 @@ public:
     vector<char> generateTags();
 
     void readTags(unsigned char *tagBuffer);
-
 
     int getHeaderSize() const;
 

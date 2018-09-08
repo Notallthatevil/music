@@ -9,7 +9,10 @@ Tag::Tag() {
 }
 
 Tag::~Tag() {
-
+    if (Cover != nullptr){
+        delete [] Cover;
+        Cover = nullptr;
+    }
 }
 
 const string &Tag::getTitle() const {

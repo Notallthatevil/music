@@ -68,6 +68,10 @@ void ID3TagV2::readTags(unsigned char *tagBuffer) {
             Track = getTextFrame(tagBuffer, pos + 10, frameSize);
         } else if (frameHeader == YEARTAG) {
             Year = getTextFrame(tagBuffer, pos + 10, frameSize);
+        } else if (frameHeader == COVERTAG) {
+            Cover = new unsigned char[frameSize];
+            coverSize = frameSize;
+            copy(tagBuffer + pos + 10, tagBuffer + pos + 10 + frameSize, Cover);
         }
 
         pos += frameSize + 10;
@@ -129,58 +133,66 @@ string ID3TagV2::getUTF16String(unsigned char *buffer, int offset, int frameSize
 
 ID3TagV2::~ID3TagV2() {}
 
+
+
+
+//TAG GENERATION
+
+
 vector<char> ID3TagV2::generateTags() {
     vector<char> tag(0);
     if (Title != "") {
-        auto frame = createTextFrame(TITLETAG,Title);
-        tag.insert(tag.end(),frame.begin(),frame.end());
+        auto frame = createTextFrame(TITLETAG, Title);
+        tag.insert(tag.end(), frame.begin(), frame.end());
     }
-    if (Artist != ""){
-        auto frame = createTextFrame(ARTISTTAG,Artist);
-        tag.insert(tag.end(),frame.begin(),frame.end());
+    if (Artist != "") {
+        auto frame = createTextFrame(ARTISTTAG, Artist);
+        tag.insert(tag.end(), frame.begin(), frame.end());
     }
-    if (Album != ""){
-        auto frame = createTextFrame(ALBUMTAG,Album);
-        tag.insert(tag.end(),frame.begin(),frame.end());
+    if (Album != "") {
+        auto frame = createTextFrame(ALBUMTAG, Album);
+        tag.insert(tag.end(), frame.begin(), frame.end());
     }
-    if (Track != ""){
-        auto frame = createTextFrame(TRACKTAG,Track);
-        tag.insert(tag.end(),frame.begin(),frame.end());
+    if (Track != "") {
+        auto frame = createTextFrame(TRACKTAG, Track);
+        tag.insert(tag.end(), frame.begin(), frame.end());
     }
-    if (Year != ""){
-        auto frame = createTextFrame(YEARTAG,Year);
-        tag.insert(tag.end(),frame.begin(),frame.end());
+    if (Year != "") {
+        auto frame = createTextFrame(YEARTAG, Year);
+        tag.insert(tag.end(), frame.begin(), frame.end());
     }
 //    if (Cover != nullptr){
 //        auto frame = createAPICFrame(COVERTAG,Cover){
 //
 //        }
-    vector<char> header{'I','D','3',UTF_8,0x00,getFlagByte()};
+    vector<char> header{'I', 'D', '3', UTF_8, 0x00, getFlagByte()};
     auto size = toSynchSafeInt(tag.size());
-    header.insert(header.end(),size.begin(),size.end());
-    header.insert(header.end(),tag.begin(),tag.end());
+    header.insert(header.end(), size.begin(), size.end());
+    header.insert(header.end(), tag.begin(), tag.end());
     tagSize = header.size();
     return header;
 }
 
 vector<char> ID3TagV2::createTextFrame(const string frameID, string data) {
     //Frame Size
-    auto synchSafeInt = toSynchSafeInt(data.size()+1);
+    auto synchSafeInt = toSynchSafeInt(data.size() + 1);
     //Frame Flags
     auto flags = createFrameFlags();
     //Text incoding
     char textEncoding = UTF_8;
     //Frame ID
-    vector<char> frame{frameID[0],frameID[1],frameID[2],frameID[3],synchSafeInt[0],synchSafeInt[1],synchSafeInt[2],synchSafeInt[3],flags[0],flags[1],textEncoding};
+    vector<char> frame{frameID[0], frameID[1], frameID[2], frameID[3], synchSafeInt[0],
+                       synchSafeInt[1], synchSafeInt[2], synchSafeInt[3], flags[0], flags[1],
+                       textEncoding};
 
     //Frame data
-    frame.insert(frame.end(),data.begin(),data.begin()+data.size());
+    frame.insert(frame.end(), data.begin(), data.begin() + data.size());
 
     return frame;
 }
 
 vector<char> ID3TagV2::createFrameFlags() {
-    return vector<char>(2,0);
+    return vector<char>(2, 0);
 }
 
 char ID3TagV2::getFlagByte() {
@@ -195,16 +207,17 @@ char ID3TagV2::getFlagByte() {
 vector<char> ID3TagV2::toSynchSafeInt(unsigned long dataSize) {
     vector<char> unsynchFrameSize(4);
     for (int i = 0; i < 4; i++) {
-        unsynchFrameSize[i] = (unsigned char) ((dataSize >> 21 - (7 * i)) & 0x7F);
+        unsynchFrameSize[i] = (unsigned char) (((dataSize >> 21) - (7 * i)) & 0x7F);
     }
     return unsynchFrameSize;
 }
 
 
-
 int ID3TagV2::getHeaderSize() const {
     return headerSize;
 }
+
+
 
 
 

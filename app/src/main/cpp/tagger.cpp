@@ -16,6 +16,8 @@
 #include <ctime>
 #include <ratio>
 #include <chrono>
+#include <cstdio>
+
 /*  Time method execution
 #include <iostream>
 #include <ctime>
@@ -152,7 +154,6 @@ JNICALL Java_com_trippntechnology_tagger_NativeWrapper_saveNewTag(JNIEnv *env, j
     env->GetByteArrayRegion(jSerialized, 0, length, (jbyte *) &buf[0]);
 
     Mp3FileV2 song(buf);
-
     string filePath = song.getFilePath();
     vector<char> newTags = song.getTag()->generateTags();
 

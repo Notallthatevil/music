@@ -4,11 +4,17 @@
 
 #include "SqlHelper.h"
 
+
+//TODO rewrite sqlite to use binding
+
 inline bool file_exists(const std::string &name) {
     struct stat buffer;
     return (stat(name.c_str(), &buffer) == 0);
 }
 
+/*
+ * Creates database directory if it doesn't exist then opens the database connection.
+ */
 SqlHelper::SqlHelper() {
     if (!file_exists(DATABASE_DIRECTORY)) {
         mkdir(DATABASE_DIRECTORY.c_str(), S_IRWXU | S_IRWXG | S_IXOTH);
@@ -20,11 +26,20 @@ SqlHelper::SqlHelper() {
     }
 }
 
+/*
+ * Basic destructor
+ * Closes the database connection
+ */
 SqlHelper::~SqlHelper() {
     sqlite3_finalize(stmt);
     sqlite3_close_v2(db);
 }
 
+/*
+ * Creates the database
+ *
+ * @param tableName - The name of the database table
+ */
 int SqlHelper::createTable(string tableName) {
     if (tableName == SONG_TABLE) {
         string sql = "CREATE TABLE " + SONG_TABLE + "(" +
@@ -34,7 +49,8 @@ int SqlHelper::createTable(string tableName) {
                      SONG_ALBUM_COLUMN + " TEXT, " +
                      SONG_TRACK_COLUMN + " TEXT, " +
                      SONG_YEAR_COLUMN + " TEXT, " +
-                     SONG_FILEPATH_COLUMN + " TEXT NOT NULL);";
+                     SONG_FILEPATH_COLUMN + " TEXT NOT NULL, " +
+                     SONG_ARTWORK_COLUMN + " BLOB);";
         sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, NULL);
         int rc = sqlite3_step(stmt);
         return rc;
@@ -42,6 +58,11 @@ int SqlHelper::createTable(string tableName) {
     return -1;
 }
 
+/*
+ * Deletes the specified table
+ *
+ * @param tableName - The name of the table to be deleted
+ */
 int SqlHelper::dropTable(string tableName) {
     string sql = "DROP TABLE IF EXISTS " + tableName;
     sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, NULL);
@@ -49,20 +70,56 @@ int SqlHelper::dropTable(string tableName) {
     return rc;
 }
 
+
+/*
+ * Adds a song to the database while also making sure the contents in the file
+ * are ready to be inserted.
+ *
+ * @param audioFile - Pointer the audio file set to be added
+ */
 int SqlHelper::insertSong(AudioFile *audioFile) {
-    if (audioFile->getFilePath().find("'") != audioFile->getFilePath().npos) {
-        makeSqlFriendly(audioFile->getFilePath(), "'");
+//    if (audioFile->getFilePath().find("'") != audioFile->getFilePath().npos) {
+//        makeSqlFriendly(audioFile->getFilePath(), "'");
+//    }
+    string sql = "INSERT INTO " + SONG_TABLE +
+                 "(TITLE,ARTIST,ALBUM,TRACK,YEAR,FILEPATH,ARTWORK) " +
+                 "VALUES(:TIT,:ART,:ALB,:TRA,:YEA,:FIL,?);";
+    int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, NULL);
+
+    if (rc != SQLITE_OK) {
+        __android_log_print(ANDROID_LOG_ERROR, "SQL_ERROR", "prepare failed: %s",
+                            sqlite3_errmsg(db));
+    } else {
+        sqlite3_bind_text(stmt, SONG_TITLE_NUMBER, audioFile->getTag()->getTitle().c_str(), -1,
+                          SQLITE_STATIC);
+        sqlite3_bind_text(stmt, SONG_ARTIST_NUMBER, audioFile->getTag()->getArtist().c_str(), -1,
+                          SQLITE_STATIC);
+        sqlite3_bind_text(stmt, SONG_ALBUM_NUMBER, audioFile->getTag()->getAlbum().c_str(), -1,
+                          SQLITE_STATIC);
+        sqlite3_bind_text(stmt, SONG_TRACK_NUMBER, audioFile->getTag()->getTrack().c_str(), -1,
+                          SQLITE_STATIC);
+        sqlite3_bind_text(stmt, SONG_YEAR_NUMBER, audioFile->getTag()->getYear().c_str(), -1,
+                          SQLITE_STATIC);
+        sqlite3_bind_text(stmt, SONG_FILEPATH_NUMBER, audioFile->getFilePath().c_str(), -1,
+                          SQLITE_STATIC);
+        sqlite3_bind_blob(stmt, SONG_ARTWORK_NUMBER, audioFile->getTag()->getCover(),
+                          audioFile->getTag()->getCoverSize(), SQLITE_STATIC);
+        rc = sqlite3_step(stmt);
     }
-    string sql = "INSERT INTO " + SONG_TABLE + "(TITLE,ARTIST,ALBUM,TRACK,YEAR,FILEPATH) VALUES('" +
-                 audioFile->getTag()->getTitle() + "', '" +
-                 audioFile->getTag()->getArtist() + "', '" +
-                 audioFile->getTag()->getAlbum() + "', '" +
-                 audioFile->getTag()->getTrack() + "', '" +
-                 audioFile->getTag()->getYear() + "', '" +
-                 audioFile->getFilePath() + "');";
-    sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, NULL);
-    int rc = sqlite3_step(stmt);
     return rc;
+
+
+
+//    string sql = "INSERT INTO " + SONG_TABLE + "(TITLE,ARTIST,ALBUM,TRACK,YEAR,FILEPATH,ARTWORK) VALUES('" +
+//                 audioFile->getTag()->getTitle() + "', '" +
+//                 audioFile->getTag()->getArtist() + "', '" +
+//                 audioFile->getTag()->getAlbum() + "', '" +
+//                 audioFile->getTag()->getTrack() + "', '" +
+//                 audioFile->getTag()->getYear() + "', '" +
+//                 audioFile->getFilePath() + "' );";
+//    int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, NULL);
+//    sqlite3_step(stmt);
+//    return rc;
 }
 
 
@@ -92,7 +149,7 @@ jobjectArray SqlHelper::retrieveAllSongs(JNIEnv *env) {
         jstring jFilepath = env->NewStringUTF(
                 (char *) sqlite3_column_text(stmt, SONG_FILEPATH_NUMBER));
         jobject jSong = env->NewObject(jSongClass, jSongConstructor, jID, jTitle, jArtist, jAlbum,
-                                       jTrack, jYear, jFilepath,NULL);
+                                       jTrack, jYear, jFilepath, NULL);
         songList.push_back(jSong);
     }
     jobjectArray jSongList = env->NewObjectArray((jint) songList.size(), jSongClass, NULL);
