@@ -138,6 +138,10 @@ Java_com_trippntechnology_tagger_NativeWrapper_generateDatabase(JNIEnv *env, job
     return insertErrors;
 }
 
+
+/*
+ * Returns all songs from the database
+ */
 extern "C"
 JNIEXPORT jobjectArray
 JNICALL Java_com_trippntechnology_tagger_NativeWrapper_retrieveSongs(JNIEnv *env, jobject) {

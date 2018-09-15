@@ -1,5 +1,6 @@
 package com.trippntechnology.tagger
 
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.widget.TextView
@@ -17,6 +18,10 @@ class TagEditorActivity : AppCompatActivity() {
         editTextArtist.setText(song.Artist,TextView.BufferType.EDITABLE)
         editTextTrack.setText(song.Track,TextView.BufferType.EDITABLE)
         editTextYear.setText(song.Year,TextView.BufferType.EDITABLE)
+        if(song.Cover != null){
+            val bitmap = BitmapFactory.decodeByteArray(song.Cover,0, song.Cover!!.size)
+            imageView.setImageBitmap(bitmap)
+        }
         val nativeWrapper = NativeWrapper()
         buttonAccept.setOnClickListener {
             val newSong = Song(song.ID,editTextTitle.text.toString(), editTextArtist.text.toString(),editTextAlbum.text.toString(),editTextTrack.text.toString(),editTextYear.text.toString(),song.FilePath,null)

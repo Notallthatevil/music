@@ -55,8 +55,8 @@ void ID3TagV2::readTags(unsigned char *tagBuffer) {
             break;
         }
         frameSize =
-                tagBuffer[pos + 4] << 21 | tagBuffer[pos + 5] << 14 |
-                tagBuffer[pos + 6] << 7 | tagBuffer[pos + 7];
+                tagBuffer[pos + 4] << 24 | tagBuffer[pos + 5] << 16 |
+                tagBuffer[pos + 6] << 8 | tagBuffer[pos + 7];
 
         if (frameHeader == TITLETAG) {
             Title = getTextFrame(tagBuffer, pos + 10, frameSize);
@@ -69,9 +69,38 @@ void ID3TagV2::readTags(unsigned char *tagBuffer) {
         } else if (frameHeader == YEARTAG) {
             Year = getTextFrame(tagBuffer, pos + 10, frameSize);
         } else if (frameHeader == COVERTAG) {
-            Cover = new unsigned char[frameSize];
-            coverSize = frameSize;
-            copy(tagBuffer + pos + 10, tagBuffer + pos + 10 + frameSize, Cover);
+            int apicFrameOffset = pos + 10;
+            int frameSizeOffset = frameSize;
+            unsigned char encoding = tagBuffer[apicFrameOffset++];
+            frameSizeOffset--;
+            string mimeType = "";
+            while (tagBuffer[apicFrameOffset] != 0x00) {
+                mimeType += tagBuffer[apicFrameOffset++];
+                frameSizeOffset--;
+            }
+            char pictureType = tagBuffer[++apicFrameOffset];
+            frameSizeOffset--;
+            apicFrameOffset++;
+            frameSizeOffset--;
+            if(encoding == 0x01 /*UTF-16*/){
+                while (tagBuffer[apicFrameOffset] != 0x00 || tagBuffer[apicFrameOffset + 1] != 0x00) {
+                    apicFrameOffset+=2;
+                    frameSizeOffset-=2;
+                }
+                apicFrameOffset+=2;
+                frameSizeOffset-=2;
+            }
+            else{
+                while (tagBuffer[apicFrameOffset] != 0x00) {
+                    apicFrameOffset++;
+                    frameSizeOffset--;
+                }
+                apicFrameOffset++;
+                frameSizeOffset--;
+            }
+            Cover = new unsigned char[frameSizeOffset];
+            coverSize = frameSizeOffset;
+            copy(tagBuffer + apicFrameOffset, tagBuffer + apicFrameOffset + frameSizeOffset, Cover);
         }
 
         pos += frameSize + 10;
@@ -216,17 +245,3 @@ vector<char> ID3TagV2::toSynchSafeInt(unsigned long dataSize) {
 int ID3TagV2::getHeaderSize() const {
     return headerSize;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-

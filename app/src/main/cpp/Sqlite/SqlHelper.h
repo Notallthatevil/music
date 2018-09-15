@@ -22,23 +22,24 @@ private:
     const string DATABASE_DIRECTORY = "/data/data/com.trippntechnology.tagger/databases";
     const string DATABASE_NAME = DATABASE_DIRECTORY+"/TNT.db";
 
-    const string SONG_ID_COLUMN = "ID";
-    const string SONG_TITLE_COLUMN = "TITLE";
-    const string SONG_ARTIST_COLUMN = "ARTIST";
-    const string SONG_ALBUM_COLUMN = "ALBUM";
-    const string SONG_TRACK_COLUMN = "TRACK";
-    const string SONG_YEAR_COLUMN = "YEAR";
-    const string SONG_FILEPATH_COLUMN = "FILEPATH";
-    const string SONG_ARTWORK_COLUMN = "ARTWORK";
+    const string SONG_ID = "ID";
+    const string SONG_TITLE = "TITLE";
+    const string SONG_ARTIST = "ARTIST";
+    const string SONG_ALBUM = "ALBUM";
+    const string SONG_TRACK = "TRACK";
+    const string SONG_YEAR = "YEAR";
+    const string SONG_FILEPATH = "FILEPATH";
+    const string SONG_COVER = "ARTWORK";
 
-    const int SONG_ID_NUMBER = 0;
-    const int SONG_TITLE_NUMBER = 1;
-    const int SONG_ARTIST_NUMBER = 2;
-    const int SONG_ALBUM_NUMBER = 3;
-    const int SONG_TRACK_NUMBER = 4;
-    const int SONG_YEAR_NUMBER = 5;
-    const int SONG_FILEPATH_NUMBER = 6;
-    const int SONG_ARTWORK_NUMBER = 7;
+    const int SONG_ID_COLUMN = 0;
+    const int SONG_TITLE_COLUMN = 1;
+    const int SONG_ARTIST_COLUMN = 2;
+    const int SONG_ALBUM_COLUMN = 3;
+    const int SONG_TRACK_COLUMN = 4;
+    const int SONG_YEAR_COLUMN = 5;
+    const int SONG_FILEPATH_COLUMN = 6;
+    const int SONG_COVER_COLUMN = 7;
+
     sqlite3 *db;
     sqlite3_stmt *stmt;
 
