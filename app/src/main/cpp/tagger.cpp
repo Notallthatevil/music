@@ -169,7 +169,7 @@ JNICALL Java_com_trippntechnology_tagger_NativeWrapper_saveNewTag(JNIEnv *env, j
     FILE *f = fopen(filePath.c_str(),"w+");
     fwrite(newTags.data(), sizeof(char),newTags.size(),f);
     fclose(f);
-    sqlHelper.updateSong(&song);
+    sqlHelper.updateSong(&song,song.getID());
 
     return 1;
 }

@@ -19,7 +19,7 @@ import com.trippntechnology.tagger.databinding.ActivityMainBinding
 
 
 
-//Notice all kotlin code is for testing purposes only and does not represent the final project
+//Notice: All kotlin code is for testing purposes only and does not represent the final project
 
 
 

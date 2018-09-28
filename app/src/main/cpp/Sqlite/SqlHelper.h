@@ -56,11 +56,9 @@ public:
 
     int insertSong(AudioFile *audioFile);
 
-    int updateSong(AudioFile *audioFile);
+    int updateSong(AudioFile *audioFile, int ID);
 
     string selectSong(AudioFile *audioFile);
-
-    void makeSqlFriendly(string str, const char *symbol);
 
     jobjectArray retrieveAllSongs(JNIEnv *env);
 

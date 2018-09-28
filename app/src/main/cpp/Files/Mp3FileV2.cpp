@@ -65,6 +65,7 @@ Mp3FileV2::Mp3FileV2(vector<char> deserialize) : AudioFile(deserialize) {
                     break;
                 case 6:
                     getTag()->setCover((unsigned char *) subBuffer.data());
+                    getTag()->setCoverSize(length);
                 default:
                     break;
             }

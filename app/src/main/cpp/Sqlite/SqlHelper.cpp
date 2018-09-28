@@ -78,9 +78,6 @@ int SqlHelper::dropTable(string tableName) {
  * @param audioFile - Pointer to the audio file to be added
  */
 int SqlHelper::insertSong(AudioFile *audioFile) {
-//    if (audioFile->getFilePath().find("'") != audioFile->getFilePath().npos) {
-//        makeSqlFriendly(audioFile->getFilePath(), "'");
-//    }
     string sql = "INSERT INTO " + SONG_TABLE +
                  "(TITLE,ARTIST,ALBUM,TRACK,YEAR,FILEPATH,ARTWORK) " +
                  "VALUES(:TIT,:ART,:ALB,:TRA,:YEA,:FIL,?);";
@@ -110,15 +107,6 @@ int SqlHelper::insertSong(AudioFile *audioFile) {
 }
 
 
-//void SqlHelper::makeSqlFriendly(string str, const char *symbol) {
-//    for (size_t i = 0; i < str.length(); i++) {
-//        if (str[i] == symbol[0]) {
-//            str.insert(i, symbol);
-//            i++;
-//        }
-//    }
-//}
-
 jobjectArray SqlHelper::retrieveAllSongs(JNIEnv *env) {
     string sql = "SELECT * FROM " + SONG_TABLE;
     sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, NULL);
@@ -133,12 +121,13 @@ jobjectArray SqlHelper::retrieveAllSongs(JNIEnv *env) {
         jstring jAlbum = env->NewStringUTF((char *) sqlite3_column_text(stmt, SONG_ALBUM_COLUMN));
         jstring jTrack = env->NewStringUTF((char *) sqlite3_column_text(stmt, SONG_TRACK_COLUMN));
         jstring jYear = env->NewStringUTF((char *) sqlite3_column_text(stmt, SONG_YEAR_COLUMN));
-        jstring jFilepath = env->NewStringUTF((char *) sqlite3_column_text(stmt, SONG_FILEPATH_COLUMN));
+        jstring jFilepath = env->NewStringUTF(
+                (char *) sqlite3_column_text(stmt, SONG_FILEPATH_COLUMN));
 
-        int length = sqlite3_column_bytes(stmt,SONG_COVER_COLUMN);
-        char * blob = (char*) sqlite3_column_blob(stmt,SONG_COVER_COLUMN);
+        int length = sqlite3_column_bytes(stmt, SONG_COVER_COLUMN);
+        char *blob = (char *) sqlite3_column_blob(stmt, SONG_COVER_COLUMN);
         jbyteArray jCover = env->NewByteArray(length);
-        env->SetByteArrayRegion(jCover,0,length,(jbyte*)blob);
+        env->SetByteArrayRegion(jCover, 0, length, (jbyte *) blob);
         jobject jSong = env->NewObject(jSongClass, jSongConstructor, jID, jTitle, jArtist, jAlbum,
                                        jTrack, jYear, jFilepath, jCover);
         songList.push_back(jSong);
@@ -163,20 +152,50 @@ string SqlHelper::selectSong(AudioFile *audioFile) {
     return string((char *) sqlite3_column_text(stmt, 0));
 }
 
-int SqlHelper::updateSong(AudioFile *audioFile) {
-    stringstream ss;
-    ss << audioFile->getID();
-    //TODO make sure strings are sql friendly i.e. no ' symbols without doubling them up first
-    string sql =
-            "UPDATE " + SONG_TABLE + " SET " + SONG_TITLE + " = '" +
-            audioFile->getTag()->getTitle() + "', " +
-            SONG_ARTIST + " = '" + audioFile->getTag()->getArtist() + "', " +
-            SONG_ALBUM + " = '" + audioFile->getTag()->getAlbum() + "', " +
-            SONG_TRACK + " = '" + audioFile->getTag()->getTrack() + "', " +
-            SONG_YEAR + " = '" + audioFile->getTag()->getYear() +
-            "' WHERE " + SONG_ID + " = " + ss.str() +
-            ";";
-    sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, NULL);
-    int rc = sqlite3_step(stmt);
+/*
+ * Updates the selected audio file based on the id passed in
+ *
+ * @param audioFile - The new audio file to be updated
+ * @param ID - The ID of the database entry to be updated
+ */
+int SqlHelper::updateSong(AudioFile *audioFile, int ID) {
+    Tag *tag = audioFile->getTag();
+    string sql = "UPDATE " + SONG_TABLE + " SET " +
+                 SONG_TITLE + " = :TIT, " +
+                 SONG_ARTIST + " = :ART, " +
+                 SONG_ALBUM + " = :ALB, " +
+                 SONG_TRACK + " = :TRA, " +
+                 SONG_YEAR + " = :YEA, " +
+                 SONG_COVER + " = ? WHERE " +
+                 SONG_ID + " = " + to_string(ID) + ";";
+
+    int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, NULL);
+
+    if (rc != SQLITE_OK) {
+        __android_log_print(ANDROID_LOG_ERROR, "SQL_ERROR", "prepare failed: %s",
+                            sqlite3_errmsg(db));
+    } else {
+        sqlite3_bind_text(stmt, 1, tag->getTitle().c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt, 2, tag->getArtist().c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt, 3, tag->getAlbum().c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt, 4, tag->getTrack().c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_text(stmt, 5, tag->getYear().c_str(), -1, SQLITE_STATIC);
+        sqlite3_bind_blob(stmt, 6, tag->getCover(),tag->getCoverSize(),SQLITE_STATIC);
+    }
+    rc = sqlite3_step(stmt);
     return rc;
+
+
+//    string sql =
+//            "UPDATE " + SONG_TABLE + " SET " + SONG_TITLE + " = '" +
+//            audioFile->getTag()->getTitle() + "', " +
+//            SONG_ARTIST + " = '" + audioFile->getTag()->getArtist() + "', " +
+//            SONG_ALBUM + " = '" + audioFile->getTag()->getAlbum() + "', " +
+//            SONG_TRACK + " = '" + audioFile->getTag()->getTrack() + "', " +
+//            SONG_YEAR + " = '" + audioFile->getTag()->getYear() +
+//            "' WHERE " + SONG_ID + " = " + to_string(ID) +
+//            ";";
+//    sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, NULL);
+//    int rc = sqlite3_step(stmt);
+//    return rc;
 }

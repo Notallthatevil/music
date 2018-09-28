@@ -63,12 +63,16 @@ void Tag::setCover(unsigned char *Cover) {
     Tag::Cover = Cover;
 }
 
-long Tag::getCoverSize() const {
+int Tag::getCoverSize() const {
     return coverSize;
 }
 
-long Tag::getTagSize() const {
+int Tag::getTagSize() const {
     return tagSize;
+}
+
+void Tag::setCoverSize(int lengthInBytes) {
+    coverSize = lengthInBytes;
 }
 
 

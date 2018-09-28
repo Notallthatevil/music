@@ -21,8 +21,8 @@ protected: //NOTE:Tag data
     string Track;
     string Year;
     unsigned char *Cover = nullptr;
-    long coverSize = 0;
-    long tagSize = 0;
+    int coverSize = 0;
+    int tagSize = 0;
 
 
 public:
@@ -56,9 +56,11 @@ public:
 
     void setCover(unsigned char *Cover);
 
-    long getCoverSize() const;
+    int getCoverSize() const;
 
-    long getTagSize() const;
+    int getTagSize() const;
+
+    void setCoverSize(int lengthInBytes);
 
 };
 

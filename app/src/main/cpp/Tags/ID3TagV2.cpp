@@ -82,15 +82,15 @@ void ID3TagV2::readTags(unsigned char *tagBuffer) {
             frameSizeOffset--;
             apicFrameOffset++;
             frameSizeOffset--;
-            if(encoding == 0x01 /*UTF-16*/){
-                while (tagBuffer[apicFrameOffset] != 0x00 || tagBuffer[apicFrameOffset + 1] != 0x00) {
-                    apicFrameOffset+=2;
-                    frameSizeOffset-=2;
+            if (encoding == 0x01 /*UTF-16*/) {
+                while (tagBuffer[apicFrameOffset] != 0x00 ||
+                       tagBuffer[apicFrameOffset + 1] != 0x00) {
+                    apicFrameOffset += 2;
+                    frameSizeOffset -= 2;
                 }
-                apicFrameOffset+=2;
-                frameSizeOffset-=2;
-            }
-            else{
+                apicFrameOffset += 2;
+                frameSizeOffset -= 2;
+            } else {
                 while (tagBuffer[apicFrameOffset] != 0x00) {
                     apicFrameOffset++;
                     frameSizeOffset--;
@@ -121,11 +121,11 @@ string ID3TagV2::getTextFrame(unsigned char *buffer, int offset, int frameSize) 
             //UTF-8
         default:
             for (int i = 1; i < frameSize; i++) {
-                if (buffer[i + offset] == '\'') {
-                    frameData += "''";
-                } else {
+//                if (buffer[i + offset] == '\'') {
+//                    frameData += "''";
+//                } else {
                     frameData += buffer[i + offset];
-                }
+//                }
             }
             break;
     }
@@ -190,12 +190,13 @@ vector<char> ID3TagV2::generateTags() {
         auto frame = createTextFrame(YEARTAG, Year);
         tag.insert(tag.end(), frame.begin(), frame.end());
     }
-//    if (Cover != nullptr){
-//        auto frame = createAPICFrame(COVERTAG,Cover){
-//
-//        }
+    if (Cover != nullptr) {
+        auto frame = createAPICFrame(COVERTAG, Cover, coverSize);
+        tag.insert(tag.end(), frame.begin(), frame.end());
+    }
+
     vector<char> header{'I', 'D', '3', UTF_8, 0x00, getFlagByte()};
-    auto size = toSynchSafeInt(tag.size());
+    auto size = calculateFrameSize(tag.size(), true);
     header.insert(header.end(), size.begin(), size.end());
     header.insert(header.end(), tag.begin(), tag.end());
     tagSize = header.size();
@@ -204,14 +205,14 @@ vector<char> ID3TagV2::generateTags() {
 
 vector<char> ID3TagV2::createTextFrame(const string frameID, string data) {
     //Frame Size
-    auto synchSafeInt = toSynchSafeInt(data.size() + 1);
+    auto frameSize = calculateFrameSize((data.size() + 1), false);
     //Frame Flags
     auto flags = createFrameFlags();
     //Text incoding
     char textEncoding = UTF_8;
     //Frame ID
-    vector<char> frame{frameID[0], frameID[1], frameID[2], frameID[3], synchSafeInt[0],
-                       synchSafeInt[1], synchSafeInt[2], synchSafeInt[3], flags[0], flags[1],
+    vector<char> frame{frameID[0], frameID[1], frameID[2], frameID[3], frameSize[0],
+                       frameSize[1], frameSize[2], frameSize[3], flags[0], flags[1],
                        textEncoding};
 
     //Frame data
@@ -228,20 +229,42 @@ char ID3TagV2::getFlagByte() {
     return 0;
 }
 
-//vector<char> ID3TagV2::createAPICFrame(const string frameID, unsigned char *cover) {
-//    vector<char> frame()
-//}
+vector<char> ID3TagV2::createAPICFrame(const string frameID, unsigned char *cover, long length) {
+    vector<char> frameData{0x03, 'i', 'm', 'a', 'g', 'e', '/', 'j', 'p', 'e', 'g', 0x00, 0x03, 'C',
+                           'o', 'v', 'e', 'r', 0x00};
+    frameData.insert(frameData.end(), cover, cover + length);
 
+    auto frameSize = calculateFrameSize((unsigned int) frameData.size(), false);
+    int size = frameSize[0] << 24 | frameSize[1] << 16 | frameSize[2] << 8 | frameSize[3];
+    auto flags = createFrameFlags();
 
-vector<char> ID3TagV2::toSynchSafeInt(unsigned long dataSize) {
-    vector<char> unsynchFrameSize(4);
-    for (int i = 0; i < 4; i++) {
-        unsynchFrameSize[i] = (unsigned char) (((dataSize >> 21) - (7 * i)) & 0x7F);
+    vector<char> frame{frameID[0], frameID[1], frameID[2], frameID[3], frameSize[0],
+                       frameSize[1], frameSize[2], frameSize[3], flags[0], flags[1]};
+
+    frame.insert(frame.end(), frameData.begin(), frameData.end());
+    return frame;
+}
+
+//"image/jpeg"
+
+vector<char> ID3TagV2::calculateFrameSize(int dataSize, bool synchSafe) {
+    vector<char> frameSize(4);
+    if (synchSafe) {
+        for (int i = 0; i < 4; i++) {
+            frameSize[i] = (unsigned char) (((dataSize >> 21) - (7 * i)) & 0x7F);
+        }
+    } else {
+        for (int i = 0; i < 4; i++)
+            frameSize[3 - i] = (unsigned char) (dataSize >> (i * 8));
     }
-    return unsynchFrameSize;
+    return frameSize;
+
 }
 
 
 int ID3TagV2::getHeaderSize() const {
     return headerSize;
 }
+
+
+

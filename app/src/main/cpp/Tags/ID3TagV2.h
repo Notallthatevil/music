@@ -51,11 +51,12 @@ private: //NOTE:Methods
 
     vector<char> createTextFrame(const string frameID, string data);
 
-    vector<char> toSynchSafeInt(unsigned long dataSize);
+    vector<char> calculateFrameSize(int dataSize,bool synchSafe);
 
     vector<char> createFrameFlags();
 
-//    vector<char> createAPICFrame(const string frameID, unsigned char *cover);
+    vector<char> createAPICFrame(const string frameID, unsigned char *cover, long length);
+
     char getFlagByte();
 
 
