@@ -8,7 +8,6 @@
 #include <string>
 #include <fstream>
 #include <vector>
-#include "../Byte.h"
 #include "../Tags/Tag.h"
 
 using namespace std;
@@ -20,28 +19,31 @@ struct fileAccessException : public exception {
     }
 };
 
-struct audioFileDeserializationException : public exception {
+struct invalidAudioDataSize : public exception {
+
     const char *what() const throw() {
-        return "Audio file was unable to deserialize the byte stream";
+        return "mAudioData.size() < 1; unable to copy bytes";
     }
 };
 
-
 class AudioFile {
 private:
-    int sqlID = -1;
-    string filePath = "";
-    unsigned long fileSize = 0;
-    long audioOffset = 0;
+    int mSqlID = -1;
+    string mFilePath = "";
+    unsigned long mFileSize = 0;
 
 protected:
-    ifstream *stream = nullptr;
-    vector<char> audioData;
+    ifstream *mStream = nullptr;
+    vector<char> mAudioData;
+	virtual void setAudio();
 
 public:
     AudioFile() {}
 
     AudioFile(string *filePath);
+
+	bool open();
+
 
     AudioFile(vector<char> deserialize) {};
 
@@ -55,6 +57,11 @@ public:
 
     virtual vector<char> getAudio();
 
+    /*
+     * Before calling setAudio this method must be overridden and mStream.n_pos
+     * must be set to the start of the audio data and mAudioData size must be set prior
+     */
+    
     virtual Tag* getTag() = 0;
 
     int getID() const;

@@ -4,32 +4,73 @@
 
 #include "Mp3FileV2.h"
 
-Mp3FileV2::Mp3FileV2(string *filePath, bool findTags) : AudioFile(filePath) {
-    unsigned char header[ID3TagV2::HEADER_SIZE];
-    stream->read((char *) &header, ID3TagV2::HEADER_SIZE);
 
+Mp3FileV2::Mp3FileV2(string *filePath, bool findTags) : AudioFile(filePath) {
+    //open();
+    unsigned char header[ID3TagV2::HEADER_SIZE];
+    mStream->read((char *) &header, ID3TagV2::HEADER_SIZE);
     if (header[0] == 'I' && header[1] == 'D' && header[2] == '3') {
-        id3Tag = new ID3TagV2(header);
+        mId3Tag = new ID3TagV2(header);
         if (findTags) {
             //Get tag size
 
             //Read tag into a buffer
-            long bufferSize = id3Tag->getTagSize() - id3Tag->getHeaderSize();
+            long bufferSize = mId3Tag->getTagSize() - mId3Tag->getHeaderSize();
             unsigned char *tagBuffer = new unsigned char[bufferSize];
-            stream->read((char *) tagBuffer, bufferSize);
+            mStream->read((char *) tagBuffer, bufferSize);
 
             //Read data from buffer into id3tag
-            id3Tag->readTags(tagBuffer);
+            mId3Tag->readTags(tagBuffer);
 
             delete[] tagBuffer;
             tagBuffer = nullptr;
         }
     }
-
 }
 
+
+/*	Returns value based on success
+	-1 = header was null
+	0 = success
+	1 = invalid header
+	*/
+int Mp3FileV2::parse(bool findTags) {
+	unsigned char header[ID3TagV2::HEADER_SIZE];
+	mStream->read((char *)&header, ID3TagV2::HEADER_SIZE);
+	
+	mId3Tag = new ID3TagV2();
+	int rc = mId3Tag->readHeader(header);
+	if (rc != 0) {
+		return rc;
+	}
+	
+	if (findTags) {
+		//get tag size
+		int bufferSize = mId3Tag->getTagSize() - mId3Tag->getHeaderSize();
+
+		//read tags into buffer
+		unsigned char *tagBuffer = new unsigned char[bufferSize];
+		mStream->read((char*)tagBuffer, bufferSize);
+
+		//parse tags
+		rc = mId3Tag->readTags(tagBuffer);
+
+		delete[] tagBuffer;
+		tagBuffer = nullptr;
+		return 0;
+	}
+	else {
+		return rc;
+	}
+}
+
+
+
+
+
+
 Mp3FileV2::Mp3FileV2(vector<char> deserialize) : AudioFile(deserialize) {
-    id3Tag = new ID3TagV2;
+    mId3Tag = new ID3TagV2;
     setID(int((unsigned char) deserialize[1] << 24 |
               (unsigned char) deserialize[2] << 16 |
               (unsigned char) deserialize[3] << 8 |
@@ -64,8 +105,8 @@ Mp3FileV2::Mp3FileV2(vector<char> deserialize) : AudioFile(deserialize) {
                     setFilePath(string(subBuffer.data(), length));
                     break;
                 case 6:
-                    getTag()->setCover((unsigned char *) subBuffer.data());
-                    getTag()->setCoverSize(length);
+                    //getTag()->setCover((unsigned char *) subBuffer.data());
+                    //getTag()->setCoverSize(length);
                 default:
                     break;
             }
@@ -76,16 +117,21 @@ Mp3FileV2::Mp3FileV2(vector<char> deserialize) : AudioFile(deserialize) {
 }
 
 Mp3FileV2::~Mp3FileV2() {
-    delete id3Tag;
-    id3Tag = nullptr;
+    delete mId3Tag;
+    mId3Tag = nullptr;
 }
 
 vector<char> Mp3FileV2::getAudio()  {
-    audioData.resize(getFileSize() - id3Tag->getTagSize());
-    stream->seekg(id3Tag->getTagSize(),ios_base::beg);
     return AudioFile::getAudio();
 }
 
 Tag *Mp3FileV2::getTag() {
-    return id3Tag;
+    return mId3Tag;
+}
+
+//FIXME trims the first little bit of audio
+void Mp3FileV2::setAudio() {
+    mAudioData.resize(getFileSize() - mId3Tag->getTagSize());
+    mStream->seekg(mId3Tag->getTagSize(),ios_base::beg);
+    AudioFile::setAudio();
 }

@@ -6,7 +6,6 @@
 #define TAGGER_TAG_H
 
 
-#include "../Byte.h"
 #include <string>
 #include <vector>
 
@@ -15,22 +14,23 @@ using namespace std;
 class Tag {
 
 protected: //NOTE:Tag data
-    string Title;
-    string Artist;
-    string Album;
-    string Track;
-    string Year;
-    unsigned char *Cover = nullptr;
-    int coverSize = 0;
-    int tagSize = 0;
-
+    string mTitle;
+    string mArtist;
+    string mAlbum;
+    string mTrack;
+    string mYear;
+    unsigned char *mCover = nullptr;
+    int mCoverSize = 0;
+    int mTagSize = 0;
+	Tag();
 
 public:
-    Tag();
-    virtual ~Tag();
-    virtual vector<char> generateTags()=0;
-    virtual void readTags(unsigned char *tagBuffer)=0;
 
+    virtual ~Tag();
+
+    virtual unsigned char *generateTags()=0;
+
+    virtual int readTags(unsigned char *tagBuffer)=0;
 
     const string &getTitle() const;
 
@@ -54,13 +54,11 @@ public:
 
     void setYear(const string &Year);
 
-    void setCover(unsigned char *Cover);
+    void setCover(unsigned char *Cover, int lengthInBytes, int offset);
 
     int getCoverSize() const;
 
     int getTagSize() const;
-
-    void setCoverSize(int lengthInBytes);
 
 };
 

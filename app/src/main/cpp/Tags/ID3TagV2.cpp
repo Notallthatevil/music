@@ -5,162 +5,255 @@
 #include "ID3TagV2.h"
 
 ID3TagV2::ID3TagV2(unsigned char *header) : Tag() {
-    if (header[0] == 'I' && header[1] == 'D' && header[2] == '3' && header[3] >= 3) {
-        unsigned int byte0 = (Byte) header[6];
-        unsigned int byte1 = (Byte) header[7];
-        unsigned int byte2 = (Byte) header[8];
-        unsigned int byte3 = (Byte) header[9];
-        int synchSafeInt = byte0 << 21 | byte1 << 14 | byte2 << 7 | byte3;
-        majorVersion = header[3];
-        minorVersion = header[4];
-        if (header[3] == 4 && ((header[5] & (0b00010000)) != 0)) {
-            footer = true;
-            headerSize = 20;
-        } else {
-            footer = false;
-            headerSize = 10;
-        }
-        tagSize = headerSize + synchSafeInt;
-        readFlags(header[5]);
-    } else {
-        throw ID3TagException();
-    }
+	if (header[0] == 'I' && header[1] == 'D' && header[2] == '3' && header[3] >= 3) {
+		unsigned int byte0 = header[6];
+		unsigned int byte1 = header[7];
+		unsigned int byte2 = header[8];
+		unsigned int byte3 = header[9];
+		int synchSafeInt = byte0 << 21 | byte1 << 14 | byte2 << 7 | byte3;
+		mFlagMajorVersion = header[3];
+		mFlagMinorVersion = header[4];
+		if (header[3] == 4 && ((header[5] & (0b00010000)) != 0)) {
+			mFlagFooter = true;
+			mHeaderSize = 20;
+		}
+		else {
+			mFlagFooter = false;
+			mHeaderSize = 10;
+		}
+		mTagSize = mHeaderSize + synchSafeInt;
+		readFlags(header[5]);
+	}
+	else {
+		throw ID3TagException();
+	}
 }
 
+
+/*Returns value based on success
+0 = header read succesfully
+-1 = @param header was null
+1 = invalid id3 tag*/
+int ID3TagV2::readHeader(unsigned char *header) {
+	if (header == nullptr) {
+		return -1;
+	}
+	if (header[0] == 'I' && header[1] == 'D' && header[2] == '3' && header[3] >= 3) {
+		int synchSafeInt = header[6] << 21 | header[7] << 14 | header[8] << 7 | header[9];
+		mFlagMajorVersion = header[3];
+		mFlagMinorVersion = header[4];
+		if (header[3] == 4 && ((header[5] & (0b00010000)) != 0)) {
+			mFlagFooter = true;
+			mHeaderSize = 20;
+		}
+		else {
+			mFlagFooter = false;
+			mHeaderSize = 10;
+		}
+		mTagSize = mHeaderSize + synchSafeInt;
+		readFlags(header[5]);
+
+		return 0;
+	}
+	else {
+		return 1;
+	}
+}
+
+//NO TEST NEEDED
 void ID3TagV2::readFlags(char flagByte) {
-    if (((flagByte & 0x80) >> 7) != 0) {
-        unsynchronisation = true;
-    }
-    if (((flagByte & 0x40) >> 6) != 0) {
-        extendedHeader = true;
-    }
-    if (((flagByte & 0x20) >> 5) != 0) {
-        experimental = true;
-    }
+	if (((flagByte & 0x80) >> 7) != 0) {
+		mFlagUnsynchronisation = true;
+	}
+	if (((flagByte & 0x40) >> 6) != 0) {
+		mFlagExtendedHeader = true;
+	}
+	if (((flagByte & 0x20) >> 5) != 0) {
+		mFlagExperimental = true;
+	}
 }
 
-void ID3TagV2::readTags(unsigned char *tagBuffer) {
-    if (tagSize == 0) {
-        throw ID3TagException();
-    }
-    int pos = 0;
-    int frameSize = 0;
-    string frameHeader;
-    while (pos < tagSize - headerSize) {
-        frameHeader += tagBuffer[pos];
-        frameHeader += tagBuffer[pos + 1];
-        frameHeader += tagBuffer[pos + 2];
-        frameHeader += tagBuffer[pos + 3];
-        if (frameHeader.compare(0, frameHeader.npos, "\0\0\0\0", 4) == 0) {
-            break;
-        }
-        frameSize =
-                tagBuffer[pos + 4] << 24 | tagBuffer[pos + 5] << 16 |
-                tagBuffer[pos + 6] << 8 | tagBuffer[pos + 7];
+/*Returns value based on the success of reading the tags
+0 = tags were read successfully without any unsuspected errors
+-1 = tagBuffer was null
+1 = tags might be corrupted*/
+int ID3TagV2::readTags(unsigned char *tagBuffer) {
+	unsigned int pos = 0;
+	unsigned int frameSize = 0;
+	string frameHeader;
 
-        if (frameHeader == TITLETAG) {
-            Title = getTextFrame(tagBuffer, pos + 10, frameSize);
-        } else if (frameHeader == ARTISTTAG) {
-            Artist = getTextFrame(tagBuffer, pos + 10, frameSize);
-        } else if (frameHeader == ALBUMTAG) {
-            Album = getTextFrame(tagBuffer, pos + 10, frameSize);
-        } else if (frameHeader == TRACKTAG) {
-            Track = getTextFrame(tagBuffer, pos + 10, frameSize);
-        } else if (frameHeader == YEARTAG) {
-            Year = getTextFrame(tagBuffer, pos + 10, frameSize);
-        } else if (frameHeader == COVERTAG) {
-            int apicFrameOffset = pos + 10;
-            int frameSizeOffset = frameSize;
-            unsigned char encoding = tagBuffer[apicFrameOffset++];
-            frameSizeOffset--;
-            string mimeType = "";
-            while (tagBuffer[apicFrameOffset] != 0x00) {
-                mimeType += tagBuffer[apicFrameOffset++];
-                frameSizeOffset--;
-            }
-            char pictureType = tagBuffer[++apicFrameOffset];
-            frameSizeOffset--;
-            apicFrameOffset++;
-            frameSizeOffset--;
-            if (encoding == 0x01 /*UTF-16*/) {
-                while (tagBuffer[apicFrameOffset] != 0x00 ||
-                       tagBuffer[apicFrameOffset + 1] != 0x00) {
-                    apicFrameOffset += 2;
-                    frameSizeOffset -= 2;
-                }
-                apicFrameOffset += 2;
-                frameSizeOffset -= 2;
-            } else {
-                while (tagBuffer[apicFrameOffset] != 0x00) {
-                    apicFrameOffset++;
-                    frameSizeOffset--;
-                }
-                apicFrameOffset++;
-                frameSizeOffset--;
-            }
-            Cover = new unsigned char[frameSizeOffset];
-            coverSize = frameSizeOffset;
-            copy(tagBuffer + apicFrameOffset, tagBuffer + apicFrameOffset + frameSizeOffset, Cover);
-        }
+	if (tagBuffer == nullptr) {
+		return -1;
+	}
 
-        pos += frameSize + 10;
-        frameHeader = "";
-    }
+	while (pos < mTagSize - mHeaderSize) {
+		frameHeader += tagBuffer[pos];
+		frameHeader += tagBuffer[pos + 1];
+		frameHeader += tagBuffer[pos + 2];
+		frameHeader += tagBuffer[pos + 3];
+		frameSize =
+			tagBuffer[pos + 4] << 24 | tagBuffer[pos + 5] << 16 |
+			tagBuffer[pos + 6] << 8 | tagBuffer[pos + 7];
+		if (frameSize == 0) {
+			pos += 4;
+		}
+		else {
+			if (frameHeader == TITLE_TAG) {
+				setTitle(getTextFrame(tagBuffer, pos + 10, frameSize));
+			}
+			else if (frameHeader == ARTIST_TAG) {
+				setArtist(getTextFrame(tagBuffer, pos + 10, frameSize));
+			}
+			else if (frameHeader == ALBUM_TAG) {
+				setAlbum(getTextFrame(tagBuffer, pos + 10, frameSize));
+			}
+			else if (frameHeader == TRACK_TAG) {
+				setTrack(getTextFrame(tagBuffer, pos + 10, frameSize));
+			}
+			else if (frameHeader == YEAR_TAG) {
+				setYear(getTextFrame(tagBuffer, pos + 10, frameSize));
+			}
+			else if (frameHeader == COVER_TAG) {
+				int imageOffset = findCover(tagBuffer, pos + 10, frameSize);
+				setCover(tagBuffer, frameSize - imageOffset, imageOffset);
+			}
+
+			pos += frameSize + 10;
+			frameHeader = "";
+		}
+
+	}
+	if (pos > mTagSize - mHeaderSize) {
+		return 1;
+	}
+	return 0;
 }
 
+
+/*Returns string from the passed in frame. Will always return some type of string
+within the given frame size
+*/
 string ID3TagV2::getTextFrame(unsigned char *buffer, int offset, int frameSize) {
-    string frameData = "";
-    switch (buffer[offset]) {
-        case 0x01:
-            //UTF-16
-            frameData = getUTF16String(buffer, offset, frameSize);
-            break;
-        case 0x00:
-            //ISO-8859-1
-        case 0x03:
-            //UTF-8
-        default:
-            for (int i = 1; i < frameSize; i++) {
-//                if (buffer[i + offset] == '\'') {
-//                    frameData += "''";
-//                } else {
-                    frameData += buffer[i + offset];
-//                }
-            }
-            break;
-    }
-    return frameData;
+	string frameData = "";
+	int i;
+
+	switch (buffer[offset]) {
+
+	case 0x01: //UTF-16LE
+
+		//BOM present
+		if (buffer[1 + offset] == 0xff || buffer[2 + offset] == 0xff) {
+			i = 3;
+		}
+		else {
+			i = 1;
+		}
+			if (buffer[1 + offset] == 0x0ff) {
+
+			//start at three to skip encoding and endianess
+				for (i; i < frameSize; i += 2) {
+					//FIXME Fix to work with utf-16 characters
+				
+					unsigned int charSize = buffer[i + 1] << 8 | buffer[i];
+					if (charSize > UCHAR_MAX) {
+						//Inserts placeholder currently
+						frameData += (char) 0x1F;
+					}
+					else if(charSize == 0){
+						break;
+					}
+					else {
+						frameData += buffer[i];
+					}
+				}
+			break;
+			}
+		
+	case 0x02: //UTF-16BE
+
+		//BOM present
+		if (buffer[1 + offset] == 0xff || buffer[2 + offset] == 0xff) {
+			i = 3;
+		}
+		else {
+			i = 1;
+		}
+
+		for (i; i < frameSize; i += 2) {
+
+			//FIXME Fix to work with utf-16 characters
+
+			unsigned int charSize = buffer[i] << 8 | buffer[i+1];
+			if (charSize > UCHAR_MAX) {
+				//Inserts placeholder currently
+				frameData += (char)0x1F;
+			}
+			else if (charSize == 0) {
+				break;
+			}
+			else {
+				frameData += buffer[i+1];
+			}
+
+		}
+		break;
+
+	case 0x03: //UTF-8
+		//Needs to be implimented
+	case 0x00: //ISO-8859-1
+	default:
+		for (int i = 1; i < frameSize; i++) {
+			frameData += buffer[i + offset];
+		}
+		break;
+	}
+	return frameData;
 }
 
-string ID3TagV2::getUTF16String(unsigned char *buffer, int offset, int frameSize) {
-    string frameData = "";
-    int big = 1;
-    int little = 0;
-    if (buffer[1 + offset] == 0xff) {
-        little = 1;
-        big = 0;
-    }
-    for (int i = 3; i < frameSize; i += 2) {
-        //FIXME Fix to work with utf-16 characters
-        if (buffer[i + offset + big] == 0x00 && buffer[i + offset + little] == 0x00) {
-            break;
-        }
-        if (buffer[i + offset + big] == '\'') {
-            frameData += "''";
-        } else {
-            if (buffer[i + offset + big] == 0xe9) {
-                frameData += 'e';
-            } else if (buffer[i + offset + big] == 0xf1) {
-                frameData += 'n';
-            } else {
-                frameData += buffer[i + offset + big];
-            }
-        }
-    }
-    return frameData;
+
+
+//Needs to be redone to improve reliability 
+
+/* Returns an int that indicates where the binary image data acually starts in the frame
+*/
+int ID3TagV2::findCover(unsigned char *buffer, int offset, int frameSize) {
+	if (buffer == nullptr) {
+		return -1;
+	}
+	int apicFrameOffset = offset;
+	int frameSizeOffset = frameSize;
+	unsigned char encoding = buffer[apicFrameOffset++];
+	string mimeType = "";
+	while (buffer[apicFrameOffset] != 0x00) {
+		mimeType += buffer[apicFrameOffset++];
+	}
+	char pictureType = buffer[++apicFrameOffset];
+	apicFrameOffset++;
+	if (encoding == 0x01 || encoding == 0x02 /*UTF-16*/) {
+		while (buffer[apicFrameOffset] != 0x00 ||
+			buffer[apicFrameOffset + 1] != 0x00) {
+			apicFrameOffset += 2;
+		}
+		apicFrameOffset += 2;
+	}
+	else {
+		while (buffer[apicFrameOffset] != 0x00) {
+			apicFrameOffset++;
+		}
+		apicFrameOffset++;
+	}
+	return apicFrameOffset;
 }
 
-ID3TagV2::~ID3TagV2() {}
+
+
+
+ID3TagV2::~ID3TagV2() {
+	if (mGeneratedTag != nullptr){
+		delete[] mGeneratedTag;
+		mGeneratedTag = nullptr;
+	}
+}
 
 
 
@@ -168,102 +261,148 @@ ID3TagV2::~ID3TagV2() {}
 //TAG GENERATION
 
 
-vector<char> ID3TagV2::generateTags() {
-    vector<char> tag(0);
-    if (Title != "") {
-        auto frame = createTextFrame(TITLETAG, Title);
-        tag.insert(tag.end(), frame.begin(), frame.end());
-    }
-    if (Artist != "") {
-        auto frame = createTextFrame(ARTISTTAG, Artist);
-        tag.insert(tag.end(), frame.begin(), frame.end());
-    }
-    if (Album != "") {
-        auto frame = createTextFrame(ALBUMTAG, Album);
-        tag.insert(tag.end(), frame.begin(), frame.end());
-    }
-    if (Track != "") {
-        auto frame = createTextFrame(TRACKTAG, Track);
-        tag.insert(tag.end(), frame.begin(), frame.end());
-    }
-    if (Year != "") {
-        auto frame = createTextFrame(YEARTAG, Year);
-        tag.insert(tag.end(), frame.begin(), frame.end());
-    }
-    if (Cover != nullptr) {
-        auto frame = createAPICFrame(COVERTAG, Cover, coverSize);
-        tag.insert(tag.end(), frame.begin(), frame.end());
-    }
 
-    vector<char> header{'I', 'D', '3', UTF_8, 0x00, getFlagByte()};
-    auto size = calculateFrameSize(tag.size(), true);
-    header.insert(header.end(), size.begin(), size.end());
-    header.insert(header.end(), tag.begin(), tag.end());
-    tagSize = header.size();
-    return header;
-}
 
-vector<char> ID3TagV2::createTextFrame(const string frameID, string data) {
-    //Frame Size
-    auto frameSize = calculateFrameSize((data.size() + 1), false);
-    //Frame Flags
-    auto flags = createFrameFlags();
-    //Text incoding
-    char textEncoding = UTF_8;
-    //Frame ID
-    vector<char> frame{frameID[0], frameID[1], frameID[2], frameID[3], frameSize[0],
-                       frameSize[1], frameSize[2], frameSize[3], flags[0], flags[1],
-                       textEncoding};
+unsigned char* ID3TagV2::generateTags() {
+	mGeneratedTag = new unsigned char[calculateTagSize()];
 
-    //Frame data
-    frame.insert(frame.end(), data.begin(), data.begin() + data.size());
+	//if (mTitle != "") {
+	//	auto frame = createTextFrame(TITLE_TAG, mTitle);
+	//	tag.insert(tag.end(), frame.begin(), frame.end());
+	//}
+	//if (mArtist != "") {
+	//	auto frame = createTextFrame(ARTIST_TAG, mArtist);
+	//	tag.insert(tag.end(), frame.begin(), frame.end());
+	//}
+	//if (mAlbum != "") {
+	//	auto frame = createTextFrame(ALBUM_TAG, mAlbum);
+	//	tag.insert(tag.end(), frame.begin(), frame.end());
+	//}
+	//if (mTrack != "") {
+	//	auto frame = createTextFrame(TRACK_TAG, mTrack);
+	//	tag.insert(tag.end(), frame.begin(), frame.end());
+	//}
+	//if (mYear != "") {
+	//	auto frame = createTextFrame(YEAR_TAG, mYear);
+	//	tag.insert(tag.end(), frame.begin(), frame.end());
+	//}
+	//if (mCover != nullptr) {
+	//	auto frame = createAPICFrame(mCover, mCoverSize);
+	//	tag.insert(tag.end(), frame.begin(), frame.end());
+	//}
 
-    return frame;
-}
-
-vector<char> ID3TagV2::createFrameFlags() {
-    return vector<char>(2, 0);
-}
-
-char ID3TagV2::getFlagByte() {
-    return 0;
-}
-
-vector<char> ID3TagV2::createAPICFrame(const string frameID, unsigned char *cover, long length) {
-    vector<char> frameData{0x03, 'i', 'm', 'a', 'g', 'e', '/', 'j', 'p', 'e', 'g', 0x00, 0x03, 'C',
-                           'o', 'v', 'e', 'r', 0x00};
-    frameData.insert(frameData.end(), cover, cover + length);
-
-    auto frameSize = calculateFrameSize((unsigned int) frameData.size(), false);
-    int size = frameSize[0] << 24 | frameSize[1] << 16 | frameSize[2] << 8 | frameSize[3];
-    auto flags = createFrameFlags();
-
-    vector<char> frame{frameID[0], frameID[1], frameID[2], frameID[3], frameSize[0],
-                       frameSize[1], frameSize[2], frameSize[3], flags[0], flags[1]};
-
-    frame.insert(frame.end(), frameData.begin(), frameData.end());
-    return frame;
-}
-
-//"image/jpeg"
-
-vector<char> ID3TagV2::calculateFrameSize(int dataSize, bool synchSafe) {
-    vector<char> frameSize(4);
-    if (synchSafe) {
-        for (int i = 0; i < 4; i++) {
-            frameSize[i] = (unsigned char) (((dataSize >> 21) - (7 * i)) & 0x7F);
-        }
-    } else {
-        for (int i = 0; i < 4; i++)
-            frameSize[3 - i] = (unsigned char) (dataSize >> (i * 8));
-    }
-    return frameSize;
-
+	//vector<char> header{ 'I', 'D', '3', UTF_8, 0x00, getFlagByte() };
+	////auto size = calculateFrameSize(tag.size(), true);
+	////header.insert(header.end(), size.begin(), size.end());
+	////header.insert(header.end(), tag.begin(), tag.end());
+	//mTagSize = header.size();
+	return nullptr;
 }
 
 
-int ID3TagV2::getHeaderSize() const {
-    return headerSize;
+
+unsigned char * ID3TagV2::createTextFrame(const string frameID, string data) {
+	//Frame Size
+	auto frameSize = calculateFrameSize((data.size() + 1), false);
+	//Frame Flags
+	auto flags = createFrameFlags();
+	//Text incoding
+	char textEncoding = UTF_8;
+	//Frame ID
+	/*vector<char> frame{ frameID[0], frameID[1], frameID[2], frameID[3], frameSize[0],
+					   frameSize[1], frameSize[2], frameSize[3], flags[0], flags[1],
+					   textEncoding };*/
+
+	//Frame data
+	//frame.insert(frame.end(), data.begin(), data.begin() + data.size());
+	/*vector<char> vec;
+	return vec;*/
+	return nullptr;
+}
+
+unsigned char *ID3TagV2::createFrameFlags() {
+	//return vector<char>(2, 0);
+	return nullptr;
+}
+
+unsigned char ID3TagV2::getFlagByte() {
+	return 0;
+}
+
+unsigned char *ID3TagV2::createAPICFrame(unsigned char *cover, long length) {
+
+	vector<char> frameData{ 0x03, 'i', 'm', 'a', 'g', 'e', '/', 'j', 'p', 'e', 'g', 0x00, 0x03, 'C',
+						   'o', 'v', 'e', 'r', 0x00 };
+	frameData.insert(frameData.end(), cover, cover + length);
+
+	auto frameSize = calculateFrameSize((unsigned int)frameData.size(), false);
+	int size = frameSize[0] << 24 | frameSize[1] << 16 | frameSize[2] << 8 | frameSize[3];
+	auto flags = createFrameFlags();
+
+	/*vector<char> frame{ frameID[0], frameID[1], frameID[2], frameID[3], frameSize[0],
+					   frameSize[1], frameSize[2], frameSize[3], flags[0], flags[1] };*/
+
+	//frame.insert(frame.end(), frameData.begin(), frameData.end());
+	vector<unsigned char> vec;
+	return nullptr;
+}
+
+
+/* Returns and unsigned char array of 4 that indicate the size of the frame. If the size
+is greater then 268435455 then it returns null as the size is invalid.
+@param synchSafe - Only use for the tag header. Frame headers should always be false.
+*/
+unsigned char * ID3TagV2::calculateFrameSize(unsigned int dataSize, bool synchSafe) {
+	if (dataSize > 0xfffffff) {
+		return nullptr;
+	}
+	unsigned char frameSize[4];
+	if (synchSafe) {
+		for (int i = 0; i < 4; i++) {
+			frameSize[i] = (unsigned char)(dataSize >> (21 - (7 * i)));
+		}
+	}
+	else {
+		for (int i = 0; i < 4; i++)
+			frameSize[i] = (unsigned char)(dataSize >>(24- (8 * i)));
+	}
+	return frameSize;
+}
+
+
+//TODO Add bools to indicated extended header and footer
+
+//To be used with tag generation only
+/*Returns int indicating the size of the tag*/
+int ID3TagV2::calculateTagSize() {
+	unsigned int tagSize = 0;
+	if (mTitle != "") {
+		tagSize += mTitle.size() + 10;
+	}
+	if (mArtist != "") {
+		tagSize += mArtist.size() + 10;
+	}
+	if (mAlbum != "") {
+		tagSize += mAlbum.size() + 10;
+	}
+	if (mTrack != "") {
+		tagSize += mTrack.size() + 10;
+	}
+	if (mYear != "") {
+		tagSize += mYear.size() + 10;
+	}
+	if (mCover != nullptr) {
+		tagSize += mApicBinaryHeader.size() + mCoverSize;
+	}
+	if (tagSize == 0) {
+		return -1;
+	}
+	else if(tagSize>0xFFFFFFF){
+		return -2;
+	}
+	else {
+		return tagSize += 10;
+	}
 }
 
 

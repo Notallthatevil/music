@@ -9,71 +9,83 @@ Tag::Tag() {
 }
 
 Tag::~Tag() {
-    if (Cover != nullptr){
-        delete [] Cover;
-        Cover = nullptr;
+    if (mCover != nullptr){
+        delete [] mCover;
+        mCover = nullptr;
     }
 }
 
 const string &Tag::getTitle() const {
-    return Title;
+    return Tag::mTitle;
 }
 
 const string &Tag::getArtist() const {
-    return Artist;
+    return Tag::mArtist;
 }
 
 const string &Tag::getAlbum() const {
-    return Album;
+    return Tag::mAlbum;
 }
 
 const string &Tag::getTrack() const {
-    return Track;
+    return Tag::mTrack;
 }
 
 const string &Tag::getYear() const {
-    return Year;
+    return Tag::mYear;
 }
 
 unsigned char *Tag::getCover() const {
-    return Cover;
+    return Tag::mCover;
 }
 
 void Tag::setTitle(const string &Title) {
-    Tag::Title = Title;
+    Tag::mTitle = Title;
 }
 
 void Tag::setArtist(const string &Artist) {
-    Tag::Artist = Artist;
+    Tag::mArtist = Artist;
 }
 
 void Tag::setAlbum(const string &Album) {
-    Tag::Album = Album;
+    Tag::mAlbum = Album;
 }
 
 void Tag::setTrack(const string &Track) {
-    Tag::Track = Track;
+    Tag::mTrack = Track;
 }
 
 void Tag::setYear(const string &Year) {
-    Tag::Year = Year;
+    Tag::mYear = Year;
 }
 
-void Tag::setCover(unsigned char *Cover) {
-    Tag::Cover = Cover;
+void Tag::setCover(unsigned char *coverBuffer, int lengthInBytes, int offset) {
+	if (coverBuffer == nullptr) {
+		if (Tag::mCover != nullptr) {
+			delete[] Tag::mCover;
+			Tag::mCover = nullptr;
+			Tag::mCoverSize = 0;
+		}
+	}
+	else {
+		Tag::mCoverSize = lengthInBytes;
+		Tag::mCover = new unsigned char[lengthInBytes];
+
+		for (int i = 0; i < lengthInBytes; i++) {
+			Tag::mCover[i] = coverBuffer[i+offset];
+		}
+	}
 }
 
 int Tag::getCoverSize() const {
-    return coverSize;
+    return Tag::mCoverSize;
 }
 
 int Tag::getTagSize() const {
-    return tagSize;
+    return Tag::mTagSize;
 }
 
-void Tag::setCoverSize(int lengthInBytes) {
-    coverSize = lengthInBytes;
-}
+
 
 
 

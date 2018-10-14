@@ -5,41 +5,58 @@
 #include "AudioFile.h"
 
 AudioFile::AudioFile(string *filePath) {
-    this->filePath = *filePath;
-    stream = new ifstream(filePath->c_str(), ios::ate);
-    fileSize = (unsigned long) stream->tellg();
-    stream->seekg(0, ios::beg);
+    this->mFilePath = *filePath;
+   /* mStream = new ifstream(filePath->c_str(), ios::ate);
+    mFileSize = (unsigned long) mStream->tellg();
+    mStream->seekg(0, ios::beg);*/
+}
+
+bool AudioFile::open() {
+	mStream = new ifstream(getFilePath().c_str(), ios::ate);
+	bool isOpen = mStream->is_open();
+	if (!isOpen) {
+		return false;
+	}
+	mFileSize = (unsigned long)mStream->tellg();
+	mStream->seekg(0,ios::beg);
+	return true;
 }
 
 AudioFile::~AudioFile() {
-    if (stream != nullptr) {
-        delete stream;
-        stream = nullptr;
+    if (mStream != nullptr) {
+        delete mStream;
+        mStream = nullptr;
     }
 }
 
 string AudioFile::getFilePath() const {
-    return filePath;
+    return mFilePath;
 }
 
 unsigned long AudioFile::getFileSize() const {
-    return fileSize;
+    return mFileSize;
 }
 
 int AudioFile::getID() const {
-    return sqlID;
+    return mSqlID;
 }
 
 void AudioFile::setID(int ID) {
-    AudioFile::sqlID = ID;
+    AudioFile::mSqlID = ID;
 }
 
 void AudioFile::setFilePath(const string &filePath) {
-    AudioFile::filePath = filePath;
+    AudioFile::mFilePath = filePath;
 }
 
 vector<char> AudioFile::getAudio() {
-    stream->read(&audioData[0], audioData.size());
-    return audioData;
+    return mAudioData;
+}
+
+void AudioFile::setAudio() {
+    if(mAudioData.size()<1){
+        throw invalidAudioDataSize();
+    }
+    mStream->read(&mAudioData[0], mAudioData.size());
 }
 
