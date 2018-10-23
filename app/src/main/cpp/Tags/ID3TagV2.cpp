@@ -11,8 +11,8 @@ ID3TagV2::ID3TagV2(unsigned char *header) : Tag() {
 		unsigned int byte2 = header[8];
 		unsigned int byte3 = header[9];
 		int synchSafeInt = byte0 << 21 | byte1 << 14 | byte2 << 7 | byte3;
-		mFlagMajorVersion = header[3];
-		mFlagMinorVersion = header[4];
+		mMajorVersion = header[3];
+		mMinorVersion = header[4];
 		if (header[3] == 4 && ((header[5] & (0b00010000)) != 0)) {
 			mFlagFooter = true;
 			mHeaderSize = 20;
@@ -40,8 +40,8 @@ int ID3TagV2::readHeader(unsigned char *header) {
 	}
 	if (header[0] == 'I' && header[1] == 'D' && header[2] == '3' && header[3] >= 3) {
 		int synchSafeInt = header[6] << 21 | header[7] << 14 | header[8] << 7 | header[9];
-		mFlagMajorVersion = header[3];
-		mFlagMinorVersion = header[4];
+		mMajorVersion = header[3];
+		mMinorVersion = header[4];
 		if (header[3] == 4 && ((header[5] & (0b00010000)) != 0)) {
 			mFlagFooter = true;
 			mHeaderSize = 20;
@@ -62,16 +62,21 @@ int ID3TagV2::readHeader(unsigned char *header) {
 
 //NO TEST NEEDED
 void ID3TagV2::readFlags(char flagByte) {
-	if (((flagByte & 0x80) >> 7) != 0) {
+	if ((flagByte & 0x80) != 0) {
 		mFlagUnsynchronisation = true;
 	}
-	if (((flagByte & 0x40) >> 6) != 0) {
+	if ((flagByte & 0x40) != 0) {
 		mFlagExtendedHeader = true;
 	}
-	if (((flagByte & 0x20) >> 5) != 0) {
+	if ((flagByte & 0x20) != 0) {
 		mFlagExperimental = true;
 	}
+	if ((flagByte & 0x10) != 0) {
+		mFlagFooter = true;
+	}
 }
+
+
 
 /*Returns value based on the success of reading the tags
 0 = tags were read successfully without any unsuspected errors
@@ -91,9 +96,17 @@ int ID3TagV2::readTags(unsigned char *tagBuffer) {
 		frameHeader += tagBuffer[pos + 1];
 		frameHeader += tagBuffer[pos + 2];
 		frameHeader += tagBuffer[pos + 3];
-		frameSize =
-			tagBuffer[pos + 4] << 24 | tagBuffer[pos + 5] << 16 |
-			tagBuffer[pos + 6] << 8 | tagBuffer[pos + 7];
+		if (mFlagUnsynchronisation) {
+			frameSize =
+				tagBuffer[pos + 4] << 21 | tagBuffer[pos + 5] << 14 |
+				tagBuffer[pos + 6] << 7 | tagBuffer[pos + 7];
+		}
+		else {
+			frameSize =
+				tagBuffer[pos + 4] << 24 | tagBuffer[pos + 5] << 16 |
+				tagBuffer[pos + 6] << 8 | tagBuffer[pos + 7];
+		}
+
 		if (frameSize == 0) {
 			pos += 4;
 		}
@@ -263,88 +276,162 @@ ID3TagV2::~ID3TagV2() {
 
 
 
-unsigned char* ID3TagV2::generateTags() {
-	mGeneratedTag = new unsigned char[calculateTagSize()];
+int ID3TagV2::generateTags() {
+	mTagSize = calculateTagSize(false, 0);
+	if (mTagSize < 1){
+		return mTagSize;
+	}
 
-	//if (mTitle != "") {
-	//	auto frame = createTextFrame(TITLE_TAG, mTitle);
-	//	tag.insert(tag.end(), frame.begin(), frame.end());
-	//}
-	//if (mArtist != "") {
-	//	auto frame = createTextFrame(ARTIST_TAG, mArtist);
-	//	tag.insert(tag.end(), frame.begin(), frame.end());
-	//}
-	//if (mAlbum != "") {
-	//	auto frame = createTextFrame(ALBUM_TAG, mAlbum);
-	//	tag.insert(tag.end(), frame.begin(), frame.end());
-	//}
-	//if (mTrack != "") {
-	//	auto frame = createTextFrame(TRACK_TAG, mTrack);
-	//	tag.insert(tag.end(), frame.begin(), frame.end());
-	//}
-	//if (mYear != "") {
-	//	auto frame = createTextFrame(YEAR_TAG, mYear);
-	//	tag.insert(tag.end(), frame.begin(), frame.end());
-	//}
-	//if (mCover != nullptr) {
-	//	auto frame = createAPICFrame(mCover, mCoverSize);
-	//	tag.insert(tag.end(), frame.begin(), frame.end());
-	//}
+	mGeneratedTag = new unsigned char[mTagSize];
+	
+	int offset = createID3Header(mGeneratedTag);
+	if (mTitle != "") {
+		offset = createTextFrame(mGeneratedTag, offset, TITLE_TAG, mTitle);
+	}
+	if (mArtist != "") {
+		offset = createTextFrame(mGeneratedTag, offset, ARTIST_TAG, mArtist);
+	}
+	if (mAlbum != "") {
+		offset = createTextFrame(mGeneratedTag, offset, ALBUM_TAG, mAlbum);
+	}
+	if (mTrack != "") {
+		offset = createTextFrame(mGeneratedTag, offset, TRACK_TAG, mTrack);
+	}
+	if (mYear != "") {
+		offset = createTextFrame(mGeneratedTag, offset, YEAR_TAG, mYear);
+	}
+	if (mCover != nullptr) {
+		offset = createAPICFrame(mGeneratedTag, offset);
+	}
+	return 1;
+}
 
-	//vector<char> header{ 'I', 'D', '3', UTF_8, 0x00, getFlagByte() };
-	////auto size = calculateFrameSize(tag.size(), true);
-	////header.insert(header.end(), size.begin(), size.end());
-	////header.insert(header.end(), tag.begin(), tag.end());
-	//mTagSize = header.size();
-	return nullptr;
+int ID3TagV2::createID3Header(unsigned char * dest) {
+	return createID3Header(dest, false, 0, false, false);
+}
+
+int ID3TagV2::createID3Header(unsigned char * dest, bool unsynch, int extendedHeaderSize, bool experimental, bool footer) {
+
+	//Set flags for tag
+	mFlagUnsynchronisation = unsynch;
+	mFlagExtendedHeader = extendedHeaderSize > 0 ? true : false;
+	mFlagExperimental = experimental;
+	mFlagFooter = footer;
+
+	int footerPresent = 0;
+	int frameStartingPosition = 10;
+	int offset = 0;
+
+
+	//Assign header values
+	dest[offset++] = 'I';
+	dest[offset++] = 'D';
+	dest[offset++] = '3';
+	dest[offset++] = MAJOR_VERSION;
+	dest[offset++] = MINOR_VERSION;
+	dest[offset] = 0x00;
+
+	//set flags
+	if (mFlagUnsynchronisation) {
+		dest[offset] = dest[offset] | 0x80;
+	}
+	if (mFlagExtendedHeader) {
+		dest[offset] = dest[offset] | 0x40;
+	}
+	if (mFlagExperimental) {
+		dest[offset] = dest[offset] | 0x20;
+	}
+	if (mFlagFooter) {
+		dest[offset] = dest[offset] | 0x10;
+		footerPresent = 10;
+	}
+	//Insert tag size (Whole tag - tag header - footer (if present))
+	int dataSize = mTagSize - frameStartingPosition - footerPresent;
+	for (int i = 0; i < 4; i++) {
+		dest[++offset] = (unsigned char)((dataSize >> (21 - (7 * i))) & 0x7f);
+	}
+
+	return frameStartingPosition + extendedHeaderSize;
 }
 
 
 
-unsigned char * ID3TagV2::createTextFrame(const string frameID, string data) {
-	//Frame Size
-	auto frameSize = calculateFrameSize((data.size() + 1), false);
-	//Frame Flags
-	auto flags = createFrameFlags();
-	//Text incoding
-	char textEncoding = UTF_8;
-	//Frame ID
-	/*vector<char> frame{ frameID[0], frameID[1], frameID[2], frameID[3], frameSize[0],
-					   frameSize[1], frameSize[2], frameSize[3], flags[0], flags[1],
-					   textEncoding };*/
+//Adding extended header needs to be done post tag creation.
+//TODO create method
+int ID3TagV2::insertExtendedheader(int extendedHeaderSize, bool flag) {
+	return -1;
+}
 
-	//Frame data
-	//frame.insert(frame.end(), data.begin(), data.begin() + data.size());
-	/*vector<char> vec;
-	return vec;*/
-	return nullptr;
+
+int ID3TagV2::createTextFrame(unsigned char * dest, int offset, const string frameID, string data) {
+
+	//FrameID
+	for (int i = 0; i < 4; i++) {
+		dest[offset++] = frameID[i];
+	}
+
+	//Frame size
+	//Add 1 for encoding byte
+	unsigned int dataSize = data.size() + 1;
+	for (int i = 0; i < 4; i++) {
+		if (mFlagUnsynchronisation){
+			dest[offset++] = (unsigned char)((dataSize >> (21 - (7 * i))) & 0x7f);
+
+		}
+		else {
+			dest[offset++] = (unsigned char)(dataSize >> (24 - (8 * i)));
+		}
+	}
+
+	//flags
+	dest[offset++] = 0x00;
+	dest[offset++] = 0x00;
+
+	//encoding
+	//Going to always encode in UTF-8 as it has the most options as well
+	//as following the ASCII standard
+	dest[offset++] = 0x03;
+
+	//insert data
+	for (int i = 0; i < data.size(); i++) {
+		dest[offset++] = data[i];
+	}
+
+	return offset;
 }
 
 unsigned char *ID3TagV2::createFrameFlags() {
-	//return vector<char>(2, 0);
 	return nullptr;
 }
 
-unsigned char ID3TagV2::getFlagByte() {
-	return 0;
-}
 
-unsigned char *ID3TagV2::createAPICFrame(unsigned char *cover, long length) {
+int ID3TagV2::createAPICFrame(unsigned char * dest, int offset) {
+	for (int i = 0; i < 4; i++) {
+		dest[offset++] = COVER_TAG[i];
+	}
 
-	vector<char> frameData{ 0x03, 'i', 'm', 'a', 'g', 'e', '/', 'j', 'p', 'e', 'g', 0x00, 0x03, 'C',
-						   'o', 'v', 'e', 'r', 0x00 };
-	frameData.insert(frameData.end(), cover, cover + length);
+	unsigned int dataSize = mCoverSize + mApicBinaryHeaderSize;
+	for (int i = 0; i < 4; i++) {
+		if (mFlagUnsynchronisation) {
+			dest[offset++] = (unsigned char)((dataSize >> (21 - (7 * i))) & 0x7f);
 
-	auto frameSize = calculateFrameSize((unsigned int)frameData.size(), false);
-	int size = frameSize[0] << 24 | frameSize[1] << 16 | frameSize[2] << 8 | frameSize[3];
-	auto flags = createFrameFlags();
+		}
+		else {
+			dest[offset++] = (unsigned char)(dataSize >> (24 - (8 * i)));
+		}
+	}
 
-	/*vector<char> frame{ frameID[0], frameID[1], frameID[2], frameID[3], frameSize[0],
-					   frameSize[1], frameSize[2], frameSize[3], flags[0], flags[1] };*/
+	dest[offset++] = 0x00;
+	dest[offset++] = 0x00;
 
-	//frame.insert(frame.end(), frameData.begin(), frameData.end());
-	vector<unsigned char> vec;
-	return nullptr;
+	for (int i = 0; i < mApicBinaryHeaderSize; i++) {
+		dest[offset++] = mApicBinaryHeader[i];
+	}
+	for (int i = 0; i < mCoverSize; i++) {
+		dest[offset++] = mCover[i];
+	}
+
+	return offset;
 }
 
 
@@ -352,14 +439,14 @@ unsigned char *ID3TagV2::createAPICFrame(unsigned char *cover, long length) {
 is greater then 268435455 then it returns null as the size is invalid.
 @param synchSafe - Only use for the tag header. Frame headers should always be false.
 */
-unsigned char * ID3TagV2::calculateFrameSize(unsigned int dataSize, bool synchSafe) {
+unsigned char * ID3TagV2::getTagSizeBytes(unsigned int dataSize, bool synchSafe) {
 	if (dataSize > 0xfffffff) {
 		return nullptr;
 	}
 	unsigned char frameSize[4];
 	if (synchSafe) {
 		for (int i = 0; i < 4; i++) {
-			frameSize[i] = (unsigned char)(dataSize >> (21 - (7 * i)));
+			frameSize[i] = (unsigned char)((dataSize >> (21 - (7 * i))) & 0x7f);
 		}
 	}
 	else {
@@ -374,25 +461,30 @@ unsigned char * ID3TagV2::calculateFrameSize(unsigned int dataSize, bool synchSa
 
 //To be used with tag generation only
 /*Returns int indicating the size of the tag*/
-int ID3TagV2::calculateTagSize() {
-	unsigned int tagSize = 0;
+int ID3TagV2::calculateTagSize(bool footerPresent, int extendedHeaderSize) {
+	unsigned int tagSize = extendedHeaderSize;
+	if (footerPresent) {
+		tagSize += 10;
+	}
+
+	//Need to add an extra byte to include the encoding byte
 	if (mTitle != "") {
-		tagSize += mTitle.size() + 10;
+		tagSize += mTitle.size() + 1 + 10;
 	}
 	if (mArtist != "") {
-		tagSize += mArtist.size() + 10;
+		tagSize += mArtist.size() + 1 + 10;
 	}
 	if (mAlbum != "") {
-		tagSize += mAlbum.size() + 10;
+		tagSize += mAlbum.size() + 1 + 10;
 	}
 	if (mTrack != "") {
-		tagSize += mTrack.size() + 10;
+		tagSize += mTrack.size() + 1 + 10;
 	}
 	if (mYear != "") {
-		tagSize += mYear.size() + 10;
+		tagSize += mYear.size() + 1 + 10;
 	}
 	if (mCover != nullptr) {
-		tagSize += mApicBinaryHeader.size() + mCoverSize;
+		tagSize += mApicBinaryHeader.size() + mCoverSize+10;
 	}
 	if (tagSize == 0) {
 		return -1;

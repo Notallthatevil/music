@@ -26,43 +26,51 @@ private: //NOTE: CONSTANTS
     const char UTF_16BE = 0x02;
     const char UTF_8 = 0x03;
 	const vector<char> mApicBinaryHeader{ 0x03, 'i', 'm', 'a', 'g', 'e', '/', 'j', 'p', 'e', 'g', 0x00, 0x03, 'C','o', 'v', 'e', 'r', 0x00 };
+	const int mApicBinaryHeaderSize = 19;
 
 
-     //NOTE:Header flags
-    char mFlagMajorVersion;
-    char mFlagMinorVersion;
-    bool mFlagUnsynchronisation;
-    bool mFlagExtendedHeader;
-    bool mFlagExperimental;
-    bool mFlagFooter;
+    //Header flags
+    char mMajorVersion;
+    char mMinorVersion;
+	
+	//Indicates that all frames use unsynchronisation i.e. 0x0FFFFFFF
+    bool mFlagUnsynchronisation = false;
+    bool mFlagExtendedHeader = false;
+    bool mFlagExperimental = false;
+    bool mFlagFooter = false;
 
-
-	unsigned char *mGeneratedTag = nullptr;
 
 
      //NOTE:Methods
 
 
 protected:
-	void readFlags(char flagByte);
-
-	unsigned char *createTextFrame(const string frameID, string data);
-
-	unsigned char *createFrameFlags();
-
-	unsigned char getFlagByte();
+	unsigned char *mGeneratedTag = nullptr;
 
 	int mHeaderSize = 0;
+
+	void readFlags(char flagByte);
+
+	int createTextFrame(unsigned char * dest, int offset, const string frameID, string data);
+
+	unsigned char *createFrameFlags();
 
 	int findCover(unsigned char * buffer, int offset, int frameSize);
 
 	string getTextFrame(unsigned char *buffer, int offset, int frameSize);
 
-	unsigned char *calculateFrameSize(unsigned int dataSize, bool synchSafe);
+	[[deprecated("Function is now down within respected methods. This is useless")]]
+	unsigned char *getTagSizeBytes(unsigned int dataSize, bool synchSafe);
 
-	int calculateTagSize();
+	int calculateTagSize(bool footerPresent, int extendedHeaderSize);
 
-	unsigned char *createAPICFrame(unsigned char *cover, long length);
+	int createAPICFrame(unsigned char * dest,int offset);
+
+	int createID3Header(unsigned char * dest, bool unsynch, int extendedHeaderSize, bool experimental, bool footer);
+
+	int insertExtendedheader(int extendedHeaderSize, bool flag);
+
+	int createID3Header(unsigned char * dest);
 
 
 public:
@@ -75,9 +83,7 @@ public:
 
 	int readHeader(unsigned char * header);
 
-
-
-    unsigned char *generateTags();
+    int generateTags();
 
     int readTags(unsigned char *tagBuffer);
 
@@ -85,8 +91,11 @@ public:
 		return mHeaderSize;
 	}
 
-    static const int HEADER_SIZE = 10;
+	unsigned char * getGeneratedTag() {
+		return mGeneratedTag;
+	}
 
+    static const int HEADER_SIZE = 10;
 
 };
 

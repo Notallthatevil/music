@@ -28,7 +28,7 @@ public:
 
     virtual ~Tag();
 
-    virtual unsigned char *generateTags()=0;
+    virtual int generateTags()=0;
 
     virtual int readTags(unsigned char *tagBuffer)=0;
 
