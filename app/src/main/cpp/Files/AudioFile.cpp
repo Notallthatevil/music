@@ -5,24 +5,29 @@
 #include "AudioFile.h"
 
 AudioFile::AudioFile(string *filePath) {
-    this->mFilePath = *filePath;
+    AudioFile::mFilePath = *filePath;
    /* mStream = new ifstream(filePath->c_str(), ios::ate);
     mFileSize = (unsigned long) mStream->tellg();
     mStream->seekg(0, ios::beg);*/
 }
 
 bool AudioFile::open() {
-	mStream = new ifstream(getFilePath().c_str(), ios::ate);
-	bool isOpen = mStream->is_open();
-	if (!isOpen) {
+	if(AudioFile::mIsOpen) {
+		return true;
+	}
+	AudioFile::mStream = new ifstream(getFilePath().c_str(), ios::ate|ios::binary);
+	AudioFile::mIsOpen = AudioFile::mStream->is_open();
+	if (!AudioFile::mIsOpen) {
 		return false;
 	}
-	mFileSize = (unsigned long)mStream->tellg();
-	mStream->seekg(0,ios::beg);
-	return true;
+	AudioFile::mFileSize = (unsigned long) AudioFile::mStream->tellg();
+	AudioFile::mStream->seekg(0,ios::beg);
+	AudioFile::mIsOpen = true;
+	return AudioFile::mIsOpen;
 }
 
 AudioFile::~AudioFile() {
+	AudioFile::mIsOpen = false;
     if (mStream != nullptr) {
         delete mStream;
         mStream = nullptr;

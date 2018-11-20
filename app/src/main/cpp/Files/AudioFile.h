@@ -30,12 +30,25 @@ class AudioFile {
 private:
     int mSqlID = -1;
     string mFilePath = "";
-    unsigned long mFileSize = 0;
 
 protected:
+	int BITRATE = -1;
+	int SAMPLERATE = -1;
+
+	bool mIsOpen = false;
+
+
+
+
     ifstream *mStream = nullptr;
     vector<char> mAudioData;
 	virtual void setAudio();
+	int mSampleRate = 0;
+	int mBitrate = 0;
+	long mDuration = 0; //milliseconds
+	unsigned long mFileSize = 0;
+
+
 
 public:
     AudioFile() {}
@@ -43,7 +56,6 @@ public:
     AudioFile(string *filePath);
 
 	bool open();
-
 
     AudioFile(vector<char> deserialize) {};
 
@@ -67,6 +79,7 @@ public:
     int getID() const;
 
     void setID(int ID);
+
 };
 
 

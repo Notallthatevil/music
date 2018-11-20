@@ -81,6 +81,7 @@ void ID3TagV2::readFlags(char flagByte) {
 /*Returns value based on the success of reading the tags
 0 = tags were read successfully without any unsuspected errors
 -1 = tagBuffer was null
+-2 = mTagSize is 0, readHeader() must be called prior to calling readTags
 1 = tags might be corrupted*/
 int ID3TagV2::readTags(unsigned char *tagBuffer) {
 	unsigned int pos = 0;
@@ -90,7 +91,9 @@ int ID3TagV2::readTags(unsigned char *tagBuffer) {
 	if (tagBuffer == nullptr) {
 		return -1;
 	}
-
+	if (mTagSize == 0) {
+		return -2;
+	}
 	while (pos < mTagSize - mHeaderSize) {
 		frameHeader += tagBuffer[pos];
 		frameHeader += tagBuffer[pos + 1];

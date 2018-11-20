@@ -12,9 +12,43 @@
 class Mp3FileV2 : public AudioFile {
 
 private:
-    ID3TagV2 *mId3Tag = nullptr;
+	enum Constants {
+		VERSION_1 = 0x03,
+		VERSION_2 = 0x02,
+		VERSION_2_5 = 0x00,
+		LAYER_I = 0x03,
+		LAYER_II = 0x02,
+		LAYER_III = 0x01
+	};
+
+	inline int calculateFrameSize(int samplesPerFrame, int frameBitrate, int samplerate, int padding);
+
+
+
+protected:
+
+	char MP3_VERSION = -1;
+	char MP3_LAYER = -1;
+
+	int MP3_NUM_OF_FRAMES = -1;
+	int MP3_NUM_OF_BYTES = -1;
+
 
 	Mp3FileV2() {}
+	int parseMp3Data();
+	int findBitrate(char bitrateChar);
+	int findSampleRate(char sampleRateChar); // in Hz
+	int getSamples();
+	int checkForVBRHeader();
+	int parseXingHeader(char *xingBuffer);
+	int parseVBRIHeader(char *vbriBuffer);
+	int getAverageBitrate();
+
+
+
+
+	ID3TagV2 *mId3Tag = nullptr;
+
 public:
 	Mp3FileV2(string *filePath) :AudioFile(filePath) {}
 
@@ -23,13 +57,14 @@ public:
     Mp3FileV2(vector<char> deserialize);
 
 
-    ~Mp3FileV2();
+    virtual ~Mp3FileV2();
 
     vector<char> getAudio() override;
 
     void setAudio() override;
 
 	int parse(bool findTags);
+
 
     Tag *getTag() override;
 
